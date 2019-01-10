@@ -7,16 +7,18 @@ class Game {
 	public:
 		void update(uint32_t time);
 		void handleInput(InputEvent e);
-		GameObjsPtr objects;
 		Game();
+		GameObjsPtr objects;
 	private:
+		void moveActive();
 		std::shared_ptr<GameObject> active;
-		int fallRate = 10;
-		bool moveUp = false;
-		bool moveDown = false;
-		bool moveRight = false;
-		bool moveLeft = false;
-		int moveSpeed = 32;
+		bool rightPriority = false;
+		int moveUp = 0;
+		int moveDown = 0;
+		int moveRight = 0;
+		int moveLeft = 0;
+		static const int moveSpeed = 32;
+		int gravityTimer = 0;
 		
 };
 
