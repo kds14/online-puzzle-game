@@ -1,8 +1,8 @@
-#include "video.hpp"
+#include "platform.hpp"
 
-Video video;
+Platform platform;
 
-void Video::drawO(int x, int y) {
+void Platform::drawO(int x, int y) {
 	SDL_Rect rect;
 	rect.x = x;
 	rect.y = y;
@@ -12,7 +12,7 @@ void Video::drawO(int x, int y) {
 	SDL_RenderFillRect(renderer, &rect);
 }
 
-bool Video::init(int width, int height) {
+bool Platform::init(int width, int height) {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "SDL failed to initialize: %s\n", SDL_GetError());
 		return false;
@@ -29,20 +29,41 @@ bool Video::init(int width, int height) {
 	return true;
 }
 
-void Video::drawObjs(GameObjsPtr objects) {
+void Platform::drawObjs(GameObjsPtr objects) {
 	for (auto &obj : *objects) {
 		drawO(obj->x, obj->y);
 	}
 }
 
-void Video::update(uint32_t time, GameObjsPtr objects) {
-	// handle events
+void Platform::handleEvents() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
 			exit(0);
+		} else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+			InputEvent e;
+			e.keyUp = event.type == SDL_KEYUP;
+			switch (event.key.keysym.sym) {
+				case SDLK_LEFT:
+					e.key = LEFT;
+					break;
+				case SDLK_RIGHT:
+					e.key = RIGHT;
+					break;
+				case SDLK_UP:
+					e.key = UP;
+					break;
+				case SDLK_DOWN:
+					e.key = DOWN;
+					break;
+			}
+			onInputEvent(e);
 		}
 	}
+}
+
+void Platform::update(uint32_t time, GameObjsPtr objects) {
+	handleEvents();
 
 	// draw and clear renderer
 	drawObjs(objects);
@@ -51,7 +72,7 @@ void Video::update(uint32_t time, GameObjsPtr objects) {
 	SDL_RenderClear(renderer);
 
 	// wait
-	double trueWaitTime = Video::msPerFrame - SDL_GetTicks() + frameTime + remainder;
+	double trueWaitTime = Platform::msPerFrame - SDL_GetTicks() + frameTime + remainder;
 	int waitTime = trueWaitTime;
 	if (waitTime > 0) {
 		remainder = trueWaitTime - waitTime;
@@ -60,4 +81,4 @@ void Video::update(uint32_t time, GameObjsPtr objects) {
 	frameTime = SDL_GetTicks();
 }
 
-const double Video::msPerFrame = 16.667L;
+const double Platform::msPerFrame = 16.667L;

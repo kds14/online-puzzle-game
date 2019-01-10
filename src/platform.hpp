@@ -1,13 +1,14 @@
-#ifndef VIDEO_H
-#define VIDEO_H
+#ifndef PLATFORM_H
+#define PLATFORM_H
 
 #include "SDL.h"
-#include "game.hpp"
+#include "trl.hpp"
 
-class Video {
+class Platform {
 	public:
 		bool init(int width, int height);
 		void update(uint32_t time, GameObjsPtr objects);
+		void (*onInputEvent)(InputEvent);
 	private:
 		SDL_Window* window;
 		SDL_Renderer* renderer;
@@ -17,8 +18,9 @@ class Video {
 
 		void drawO(int x, int y);
 		void drawObjs(GameObjsPtr objects);
+		void handleEvents();
 };
 
-extern Video video;
+extern Platform platform;
 
 #endif

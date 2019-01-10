@@ -1,14 +1,20 @@
 #include <iostream>
 
 #include "game.hpp"
-#include "video.hpp"
+#include "platform.hpp"
+#include "trl.hpp"
+
+void handleInput(InputEvent e) {
+	game.handleInput(e);
+}
 
 int main() {
-	video.init(500,500);
+	platform.init(500,500);
+	platform.onInputEvent = handleInput;
 	uint32_t time = 0;
 	while(1) {
 		game.update(time);
-		video.update(time, game.objects);
+		platform.update(time, game.objects);
 		time++;
 	}
 	return 0;
