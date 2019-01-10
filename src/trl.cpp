@@ -1,10 +1,15 @@
 #include <iostream>
+
+#include "game.hpp"
 #include "video.hpp"
 
 int main() {
-	video.init(200,200);
+	video.init(500,500);
+	uint32_t time = 0;
 	while(1) {
-		video.update();
+		game.update(time);
+		video.update(time, game.objects);
+		time++;
 	}
 	return 0;
 }
