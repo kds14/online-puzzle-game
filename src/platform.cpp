@@ -95,6 +95,12 @@ void Platform::handleEvents() {
 				case SDLK_DOWN:
 					e.key = DOWN;
 					break;
+				case SDLK_z:
+					e.key = ROT_LEFT;
+					break;
+				case SDLK_x:
+					e.key = ROT_RIGHT;
+					break;
 			}
 			onInputEvent(e);
 		}
@@ -102,8 +108,6 @@ void Platform::handleEvents() {
 }
 
 void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs objects, std::shared_ptr<GamePiece> active) {
-	handleEvents();
-
 	// draw and clear renderer
 	drawObjs(objects);
 	drawTileMap(tileMap);
@@ -112,6 +116,8 @@ void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs obje
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);
+
+	handleEvents();
 
 	// wait
 	double trueWaitTime = Platform::msPerFrame - SDL_GetTicks() + frameTime + remainder;

@@ -9,7 +9,7 @@ extern const int MAP_WIDTH;
 extern const int MAP_HEIGHT;
 extern const int TILE_SIZE;
 
-enum Key {UP, DOWN, LEFT, RIGHT};
+enum Key {UP, DOWN, LEFT, RIGHT, ROT_LEFT, ROT_RIGHT};
 
 struct InputEvent {
 	bool keyUp; // false for down

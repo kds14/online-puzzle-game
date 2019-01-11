@@ -16,8 +16,9 @@ class Game {
 		GameObjs objects;
 	private:
 		void moveActive();
-		bool checkCollision();
+		void rotateActive(bool cc);
 		void placeActive();
+		bool checkCollision();
 		std::shared_ptr<GamePiece> nextPiece();
 
 		bool rightPriority = false;

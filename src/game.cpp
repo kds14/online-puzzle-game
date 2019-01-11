@@ -36,6 +36,17 @@ void Game::handleInput(InputEvent e) {
 		case DOWN:
 			moveDown = !e.keyUp;
 			break;
+		case ROT_LEFT:
+			if (!e.keyUp)
+				rotateActive(true);
+			break;
+		case ROT_RIGHT:
+			if (!e.keyUp)
+				rotateActive(false);
+			break;
+			break;
+		default:
+			break;
 	}
 }
 
@@ -47,7 +58,7 @@ bool Game::checkCollision() {
 				continue;
 			x = active->x + j;
 			y = active->y + i;
-			if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT || tileMap[y * MAP_WIDTH + x]) {
+			if (x < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT || tileMap[y * MAP_WIDTH + x]) {
 				return true;
 			}
 		}
@@ -109,12 +120,39 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 		srand(time(NULL));
 	}
 	auto ptr = std::make_shared<GamePiece>();
-	ptr->x = 4;
-	ptr->y = 0;
-	ptr->rot = 0;
-	ptr->map = pieces[rand() % 7];
+	ptr->x = 3;
+	ptr->y = -1;
+	ptr->rot = 1;
+	int idx = rand() % 7;
+	if (!idx)
+		ptr->y -= 1;
+	else if (idx == 1)
+		ptr->rot = 0;
+	ptr->map = PieceMap(pieces[idx]);
 	return ptr;
 }
+
+void Game::rotateActive(bool cc) {
+	if (!active->rot)
+		return;
+	PieceMap m = PieceMap(active->map);
+	int h = active->map.size();
+	int w = active->map[0].size();
+	for (int i = 0; i < h; ++i) {
+		for (int j = 0; j < w; ++j) {
+			if (cc)
+				m[h-j-1][i] = active->map[i][j];
+			else
+				m[j][h-i-1] = active->map[i][j];
+				
+		}
+	}
+	PieceMap old = active->map;
+	active->map = m;
+	if (checkCollision())
+		active->map = old;
+}
+
 
 void Game::update(uint32_t time) {
 	if (!active) {
