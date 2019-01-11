@@ -3,7 +3,7 @@
 Game game;
 
 Game::Game() {
-	objects = std::make_shared<std::vector<std::shared_ptr<GameObject>>>();
+	objects = std::vector<std::shared_ptr<GameObject>>(10);
 	active = NULL;
 	moveUp = 0, moveDown = 0, moveRight = 0, moveUp = 0;
 	gravityTimer = 0;
@@ -47,7 +47,7 @@ void Game::handleInput(InputEvent e) {
 	}
 	if (res)
 		return res;
-	for (auto &obj : *objects) {
+	for (auto &obj : objects) {
 		res = 0;
 		if (obj == active)
 			continue;
@@ -77,6 +77,19 @@ bool Game::checkCollision() {
 	return false;
 }
 
+void Game::placeActive() {
+	int x, y;
+	for (std::size_t i = 0; i < pieceMap.size(); ++i) {
+		for (std::size_t j = 0; j < pieceMap[i].size(); ++j) {
+			x = active->x + j;
+			y = active->y + i;
+			tileMap[y * MAP_WIDTH + x] = 1;
+		}
+	}
+	objects.erase(std::remove(objects.begin(), objects.end(), active), objects.end());
+	active = NULL;
+}
+
 void Game::moveActive() {
 	int oldx = active->x;
 	int oldy = active->y;
@@ -96,20 +109,25 @@ void Game::moveActive() {
 	if (checkCollision())
 		active->x = oldx;
 	active->y += moveDown;
+	if (checkCollision()) {
+		active->y = oldy;
+		placeActive();
+		return;
+	}
 	if (++gravityTimer == 64) {
 		active->y++;
 		gravityTimer = 0;
 	}
 	if (checkCollision()) {
 		active->y = oldy;
-		active = NULL;
+		placeActive();
 	}
 }
 
 void Game::update(uint32_t time) {
 	if (!active) {
-		active = std::make_shared<GameObject>(5, 0, 1);
-		objects->push_back(active);
+		active = std::make_shared<GameObject>(4, 0, 1);
+		objects.push_back(active);
 	}
 	if (active) {
 		moveActive();

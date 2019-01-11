@@ -9,15 +9,18 @@ class Game {
 		void handleInput(InputEvent e);
 		Game();
 		~Game();
-		GameObjsPtr objects;
+
+		std::vector<uint8_t> tileMap;
+		GameObjs objects;
 	private:
 		void moveActive();
 		bool checkCollision();
-		std::shared_ptr<GameObject> active;
+		void placeActive();
+
 		bool rightPriority = false;
 		int moveUp, moveDown, moveRight, moveLeft;
 		int gravityTimer;
-		std::vector<uint8_t> tileMap;
+		std::shared_ptr<GameObject> active;
 };
 
 static std::vector<std::vector<bool>> pieceMap = { {1, 1}, {1, 1} };

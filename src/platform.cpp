@@ -2,6 +2,24 @@
 
 Platform platform;
 
+void Platform::drawTileMap(std::vector<uint8_t> tileMap) {
+	std::vector<SDL_Rect> rects;
+	int count = 0;
+	for(int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
+		if (!tileMap[i])
+			continue;
+		SDL_Rect rect;
+		rect.y = TILE_SIZE * (i / MAP_WIDTH);
+		rect.x = TILE_SIZE * (i % MAP_WIDTH);
+		rect.w = TILE_SIZE;
+		rect.h = TILE_SIZE;
+		rects.push_back(rect);
+		count++;
+	}
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+	SDL_RenderFillRects(renderer, &rects[0], count);
+}
+
 void Platform::drawO(int x, int y) {
 	SDL_Rect rect;
 	rect.x = x * TILE_SIZE;
@@ -29,8 +47,10 @@ bool Platform::init(int width, int height) {
 	return true;
 }
 
-void Platform::drawObjs(GameObjsPtr objects) {
-	for (auto &obj : *objects) {
+void Platform::drawObjs(GameObjs objects) {
+	for (auto &obj : objects) {
+		if (obj == NULL)
+			continue;
 		drawO(obj->x, obj->y);
 	}
 }
@@ -62,11 +82,12 @@ void Platform::handleEvents() {
 	}
 }
 
-void Platform::update(uint32_t time, GameObjsPtr objects) {
+void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs objects) {
 	handleEvents();
 
 	// draw and clear renderer
 	drawObjs(objects);
+	drawTileMap(tileMap);
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);

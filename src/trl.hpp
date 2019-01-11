@@ -25,6 +25,6 @@ struct GameObject {
 	}
 };
 
-typedef std::shared_ptr<std::vector<std::shared_ptr<GameObject>>> GameObjsPtr;
+typedef std::vector<std::shared_ptr<GameObject>> GameObjs;
 
 #endif
