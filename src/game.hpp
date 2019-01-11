@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "trl.hpp"
+#include "piece.hpp"
 
 class Game {
 	public:
@@ -11,19 +12,20 @@ class Game {
 		~Game();
 
 		std::vector<uint8_t> tileMap;
+		std::shared_ptr<GamePiece> active;
 		GameObjs objects;
 	private:
 		void moveActive();
 		bool checkCollision();
 		void placeActive();
+		std::shared_ptr<GamePiece> nextPiece();
 
 		bool rightPriority = false;
 		int moveUp, moveDown, moveRight, moveLeft;
 		int gravityTimer;
-		std::shared_ptr<GameObject> active;
+		bool rngInit = 0;
 };
 
-static std::vector<std::vector<bool>> pieceMap = { {1, 1}, {1, 1} };
 
 static const int moveSpeed = 32;
 

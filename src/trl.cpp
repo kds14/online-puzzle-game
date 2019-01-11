@@ -18,7 +18,7 @@ int main() {
 	uint32_t time = 0;
 	while(1) {
 		game.update(time);
-		platform.update(time, game.tileMap, game.objects);
+		platform.update(time, game.tileMap, game.objects, game.active);
 		time++;
 	}
 	return 0;

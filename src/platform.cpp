@@ -30,6 +30,26 @@ void Platform::drawO(int x, int y) {
 	SDL_RenderFillRect(renderer, &rect);
 }
 
+void Platform::drawActive(std::shared_ptr<GamePiece> active) {
+	std::vector<SDL_Rect> rects;
+	int count = 0;
+	for(std::size_t i = 0; i < active->map.size(); ++i) {
+		for(std::size_t j = 0; j < active->map[i].size(); ++j) {
+			if (!active->map[i][j])
+				continue;
+			SDL_Rect rect;
+			rect.y = (active->y + i) * TILE_SIZE;
+			rect.x = (active->x + j) * TILE_SIZE;
+			rect.w = TILE_SIZE;
+			rect.h = TILE_SIZE;
+			rects.push_back(rect);
+			count++;
+		}
+	}
+	SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE);
+	SDL_RenderFillRects(renderer, &rects[0], count);
+}
+
 bool Platform::init(int width, int height) {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "SDL failed to initialize: %s\n", SDL_GetError());
@@ -51,7 +71,6 @@ void Platform::drawObjs(GameObjs objects) {
 	for (auto &obj : objects) {
 		if (obj == NULL)
 			continue;
-		drawO(obj->x, obj->y);
 	}
 }
 
@@ -82,12 +101,14 @@ void Platform::handleEvents() {
 	}
 }
 
-void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs objects) {
+void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs objects, std::shared_ptr<GamePiece> active) {
 	handleEvents();
 
 	// draw and clear renderer
 	drawObjs(objects);
 	drawTileMap(tileMap);
+	if (active)
+		drawActive(active);
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);

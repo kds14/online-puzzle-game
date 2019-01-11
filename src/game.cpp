@@ -1,3 +1,6 @@
+#include <time.h>
+#include <stdlib.h>
+
 #include "game.hpp"
 
 Game game;
@@ -36,37 +39,12 @@ void Game::handleInput(InputEvent e) {
 	}
 }
 
-// 0: no col, 1: return to prev pos, 2: return to prev pos + lock
-/*int Game::checkCollision() {
-	int res = 0;
-	if (MAP_WIDTH < active->x+64 || 0 > active->x) {
-		res = 1;
-	}
-	if (MAP_HEIGHT < active->y+64 || 0 > active->y) {
-		res = 2;
-	}
-	if (res)
-		return res;
-	for (auto &obj : objects) {
-		res = 0;
-		if (obj == active)
-			continue;
-		if (obj->x <= active->x+64 && obj->x >= active->x) {
-			res = 1;
-			if (obj->y <= active->y+64 && obj->y >= active->y) {
-				res = 2;
-			}
-		}
-		if (res)
-			return res;
-	}
-	return 0;
-}*/
-
 bool Game::checkCollision() {
 	int x, y;
-	for (std::size_t i = 0; i < pieceMap.size(); ++i) {
-		for (std::size_t j = 0; j < pieceMap[i].size(); ++j) {
+	for (std::size_t i = 0; i < active->map.size(); ++i) {
+		for (std::size_t j = 0; j < active->map[i].size(); ++j) {
+			if (!active->map[i][j])
+				continue;
 			x = active->x + j;
 			y = active->y + i;
 			if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT || tileMap[y * MAP_WIDTH + x]) {
@@ -79,14 +57,15 @@ bool Game::checkCollision() {
 
 void Game::placeActive() {
 	int x, y;
-	for (std::size_t i = 0; i < pieceMap.size(); ++i) {
-		for (std::size_t j = 0; j < pieceMap[i].size(); ++j) {
+	for (std::size_t i = 0; i < active->map.size(); ++i) {
+		for (std::size_t j = 0; j < active->map[i].size(); ++j) {
+			if (!active->map[i][j])
+				continue;
 			x = active->x + j;
 			y = active->y + i;
 			tileMap[y * MAP_WIDTH + x] = 1;
 		}
 	}
-	objects.erase(std::remove(objects.begin(), objects.end(), active), objects.end());
 	active = NULL;
 }
 
@@ -124,10 +103,22 @@ void Game::moveActive() {
 	}
 }
 
+std::shared_ptr<GamePiece> Game::nextPiece() {
+	if (!rngInit) {
+		rngInit = 1;
+		srand(time(NULL));
+	}
+	auto ptr = std::make_shared<GamePiece>();
+	ptr->x = 4;
+	ptr->y = 0;
+	ptr->rot = 0;
+	ptr->map = pieces[rand() % 7];
+	return ptr;
+}
+
 void Game::update(uint32_t time) {
 	if (!active) {
-		active = std::make_shared<GameObject>(4, 0, 1);
-		objects.push_back(active);
+		active = nextPiece();
 	}
 	if (active) {
 		moveActive();
