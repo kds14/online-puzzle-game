@@ -4,10 +4,14 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <string.h>
 
 extern const int MAP_WIDTH;
 extern const int MAP_HEIGHT;
 extern const int TILE_SIZE;
+
+extern uint32_t game_flags;
+static const uint32_t LINE_CLEAR = 0x1;
 
 enum Key {UP, DOWN, LEFT, RIGHT, ROT_LEFT, ROT_RIGHT};
 

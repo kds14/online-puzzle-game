@@ -20,6 +20,8 @@ class Game {
 		void placeActive();
 		bool checkCollision();
 		std::shared_ptr<GamePiece> nextPiece();
+		void checkLineClear();
+		void printMap();
 
 		bool rightPriority = false;
 		int moveUp, moveDown, moveRight, moveLeft;

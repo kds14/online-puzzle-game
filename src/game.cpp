@@ -13,12 +13,19 @@ Game::Game() {
 	tileMap = std::vector<uint8_t>(200);
 }
 
+void Game::printMap() {
+	for (int i = 0; i < MAP_HEIGHT; ++i) {
+		for (int j = 0; j < MAP_WIDTH; ++j) {
+			printf("%02X ", tileMap[i * MAP_WIDTH + j]);
+		}
+		puts("");
+	}
+}
+
 Game::~Game() {
 }
 
 void Game::handleInput(InputEvent e) {
-	if (!active)
-		return;
 	switch (e.key) {
 		case LEFT:
 			moveLeft = !e.keyUp;
@@ -58,12 +65,35 @@ bool Game::checkCollision() {
 				continue;
 			x = active->x + j;
 			y = active->y + i;
+			if (y < 0)
+				break;
 			if (x < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT || tileMap[y * MAP_WIDTH + x]) {
 				return true;
 			}
 		}
 	}
 	return false;
+}
+
+void Game::checkLineClear() {
+	int idx = 0;
+	for (int i = 0; i < MAP_HEIGHT; ++i) {
+		bool full = true;
+		for (int j = 0; j < MAP_WIDTH; ++j) {
+			if (!tileMap[i * MAP_WIDTH + j]) {
+				full = false;
+				break;
+			}
+		}
+		if (full) {
+			uint8_t tmp[MAP_HEIGHT * MAP_WIDTH];
+			idx = i * MAP_WIDTH;
+			memcpy(&tmp, &tileMap[0], idx);
+			memcpy(&tileMap[MAP_WIDTH], &tmp, idx);
+			memset(&tileMap[0], 0, MAP_WIDTH);
+			game_flags |= LINE_CLEAR;
+		}
+	}
 }
 
 void Game::placeActive() {
@@ -77,6 +107,7 @@ void Game::placeActive() {
 			tileMap[y * MAP_WIDTH + x] = 1;
 		}
 	}
+	checkLineClear();
 	active = NULL;
 }
 
@@ -98,12 +129,14 @@ void Game::moveActive() {
 	}
 	if (checkCollision())
 		active->x = oldx;
+	oldx = active->x;
 	active->y += moveDown;
 	if (checkCollision()) {
 		active->y = oldy;
 		placeActive();
 		return;
 	}
+	oldy = active->y;
 	if (++gravityTimer == 64) {
 		active->y++;
 		gravityTimer = 0;
@@ -133,7 +166,7 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 }
 
 void Game::rotateActive(bool cc) {
-	if (!active->rot)
+	if (!active || !active->rot)
 		return;
 	PieceMap m = PieceMap(active->map);
 	int h = active->map.size();
@@ -144,7 +177,7 @@ void Game::rotateActive(bool cc) {
 				m[h-j-1][i] = active->map[i][j];
 			else
 				m[j][h-i-1] = active->map[i][j];
-				
+
 		}
 	}
 	PieceMap old = active->map;
@@ -155,6 +188,8 @@ void Game::rotateActive(bool cc) {
 
 
 void Game::update(uint32_t time) {
+	if (game_flags & LINE_CLEAR)
+		return;
 	if (!active) {
 		active = nextPiece();
 	}
