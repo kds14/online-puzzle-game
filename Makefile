@@ -1,7 +1,7 @@
 TARGET=./build/trl
 SOURCES=./src/*.cpp
 CC=g++
-FLAGS=-g -Wall -Werror
+FLAGS=-std=c++17 -g -Wall -Werror
 
 all: $(TARGET)
 

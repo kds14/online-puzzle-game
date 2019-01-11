@@ -4,10 +4,10 @@ Platform platform;
 
 void Platform::drawO(int x, int y) {
 	SDL_Rect rect;
-	rect.x = x;
-	rect.y = y;
-	rect.w = 64;
-	rect.h = 64;
+	rect.x = x * TILE_SIZE;
+	rect.y = y * TILE_SIZE;
+	rect.w = TILE_SIZE * 2;
+	rect.h = TILE_SIZE * 2;
 	SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(renderer, &rect);
 }
@@ -17,7 +17,7 @@ bool Platform::init(int width, int height) {
 		fprintf(stderr, "SDL failed to initialize: %s\n", SDL_GetError());
 		return false;
 	}
-	SDL_CreateWindowAndRenderer(width, height, 0, &this->window, &this->renderer);
+	SDL_CreateWindowAndRenderer(width * TILE_SIZE, height * TILE_SIZE, 0, &this->window, &this->renderer);
 	if (!this->window || !this->renderer) {
 		fprintf(stderr, "SDL failed to create window/renderer: %s\n", SDL_GetError());
 		return false;

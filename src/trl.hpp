@@ -5,6 +5,10 @@
 #include <vector>
 #include <algorithm>
 
+extern const int MAP_WIDTH;
+extern const int MAP_HEIGHT;
+extern const int TILE_SIZE;
+
 enum Key {UP, DOWN, LEFT, RIGHT};
 
 struct InputEvent {
