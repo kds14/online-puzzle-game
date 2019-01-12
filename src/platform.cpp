@@ -2,15 +2,16 @@
 
 Platform platform;
 
-void Platform::drawTileMap(std::vector<uint8_t> tileMap) {
+void Platform::drawTileMap(std::vector<uint8_t> tileMap, int offset) {
+	// draw blocks
 	std::vector<SDL_Rect> rects;
 	int count = 0;
 	for(int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
 		if (!tileMap[i])
 			continue;
 		SDL_Rect rect;
-		rect.y = TILE_SIZE * (i / MAP_WIDTH);
-		rect.x = TILE_SIZE * (i % MAP_WIDTH);
+		rect.y = TILE_SIZE * (yOffset + i / MAP_WIDTH);
+		rect.x = TILE_SIZE * (offset + i % MAP_WIDTH);
 		rect.w = TILE_SIZE;
 		rect.h = TILE_SIZE;
 		rects.push_back(rect);
@@ -18,19 +19,17 @@ void Platform::drawTileMap(std::vector<uint8_t> tileMap) {
 	}
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRects(renderer, &rects[0], count);
+
+	// draw border
+	SDL_Rect bRect;
+	bRect.y = yOffset * TILE_SIZE;
+	bRect.x = offset * TILE_SIZE;
+	bRect.w = TILE_SIZE * MAP_WIDTH;
+	bRect.h = TILE_SIZE * MAP_HEIGHT;
+	SDL_RenderDrawRect(renderer, &bRect);
 }
 
-void Platform::drawO(int x, int y) {
-	SDL_Rect rect;
-	rect.x = x * TILE_SIZE;
-	rect.y = y * TILE_SIZE;
-	rect.w = TILE_SIZE * 2;
-	rect.h = TILE_SIZE * 2;
-	SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderFillRect(renderer, &rect);
-}
-
-void Platform::drawActive(std::shared_ptr<GamePiece> active) {
+void Platform::drawActive(std::shared_ptr<GamePiece> active, int offset) {
 	std::vector<SDL_Rect> rects;
 	int count = 0;
 	for(std::size_t i = 0; i < active->map.size(); ++i) {
@@ -38,8 +37,8 @@ void Platform::drawActive(std::shared_ptr<GamePiece> active) {
 			if (!active->map[i][j])
 				continue;
 			SDL_Rect rect;
-			rect.y = (active->y + i) * TILE_SIZE;
-			rect.x = (active->x + j) * TILE_SIZE;
+			rect.y = (yOffset + active->y + i) * TILE_SIZE;
+			rect.x = (offset + active->x + j) * TILE_SIZE;
 			rect.w = TILE_SIZE;
 			rect.h = TILE_SIZE;
 			rects.push_back(rect);
@@ -51,6 +50,14 @@ void Platform::drawActive(std::shared_ptr<GamePiece> active) {
 }
 
 bool Platform::init(int width, int height) {
+	// change layout if 2p
+	if (game_flags & TWOP_FLAG) {
+		p1Offset = 1;
+		width = width * 3 + 2;
+		p2Offset = width - 11;
+	}
+	height = height + 4;
+
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "SDL failed to initialize: %s\n", SDL_GetError());
 		return false;
@@ -107,12 +114,19 @@ void Platform::handleEvents() {
 	}
 }
 
-void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs objects, std::shared_ptr<GamePiece> active) {
+void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs objects, std::shared_ptr<GamePiece> active, std::shared_ptr<GameState> p2state) {
 	// draw and clear renderer
 	drawObjs(objects);
-	drawTileMap(tileMap);
 	if (active)
-		drawActive(active);
+		drawActive(active, p1Offset);
+	drawTileMap(tileMap, p1Offset);
+	if (game_flags & TWOP_FLAG) {
+		if (p2state) {
+			if (p2state->active)
+				drawActive(p2state->active, p2Offset);
+			drawTileMap(p2state->tileMap, p2Offset);
+		}
+	}
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);

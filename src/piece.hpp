@@ -15,7 +15,7 @@ const std::vector<PieceMap> pieces = {iPiece, oPiece, tPiece, lPiece,
 jPiece, sPiece, zPiece};
 
 struct GamePiece {
-	int x,y,rot;
+	int8_t x,y,rot;
 	PieceMap map;
 };
 

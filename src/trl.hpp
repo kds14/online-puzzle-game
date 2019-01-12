@@ -6,12 +6,15 @@
 #include <algorithm>
 #include <string.h>
 
+#include "piece.hpp"
+
 extern const int MAP_WIDTH;
 extern const int MAP_HEIGHT;
 extern const int TILE_SIZE;
 
 extern uint32_t game_flags;
 static const uint32_t LINE_CLEAR = 0x1;
+static const uint32_t TWOP_FLAG = 0x2;
 
 enum Key {UP, DOWN, LEFT, RIGHT, ROT_LEFT, ROT_RIGHT};
 
@@ -30,7 +33,14 @@ struct GameObject {
 };
 
 typedef std::vector<std::shared_ptr<GameObject>> GameObjs;
-
 typedef std::vector<uint8_t> TileMap;
+typedef std::shared_ptr<GamePiece> GamePiecePtr;
+
+struct GameState {
+	GamePiecePtr active;
+	TileMap tileMap;
+};
+
+
 
 #endif

@@ -22,9 +22,10 @@ void parseArgs(int argc, char** argv) {
 		if (!arg.compare(HOST_ARG)) {
 			if (argc > i + 1) {
 				std::string p = argv[i+1];
-				if (!network.host(p))
+				if (!network.host(p)) {
 					printf("Successful connection on port %s\n", p.c_str());
-				else
+					game_flags |= TWOP_FLAG;
+				} else
 					exit(0);
 			} else {
 				fprintf(stderr, "Error: No port given with -h\n");
@@ -34,9 +35,10 @@ void parseArgs(int argc, char** argv) {
 			if (argc > i + 2) {
 				std::string h = argv[i+1];
 				std::string p = argv[i+2];
-				if (!network.conn(h, p))
+				if (!network.conn(h, p)) {
 					printf("Successful connection to host %s on port %s\n", h.c_str(), p.c_str());
-				else
+					game_flags |= TWOP_FLAG;
+				} else
 					exit(0);
 			} else {
 				fprintf(stderr, "Error: Incorrect connection format. Try -c HOSTNAME PORT\n");
@@ -58,7 +60,15 @@ int main(int argc, char** argv) {
 			line_timer = 0;
 		}
 		game.update(time);
-		platform.update(time, game.tileMap, game.objects, game.active);
+		std::shared_ptr<GameState> p2state = NULL;
+		if (game_flags & TWOP_FLAG) {
+			auto ptr = std::make_shared<GameState>();
+			ptr->active = game.active;
+			ptr->tileMap = game.tileMap;
+			network.send_state(ptr);
+			p2state = network.rec();
+		}
+		platform.update(time, game.tileMap, game.objects, game.active, p2state);
 		time++;
 	}
 	return 0;

@@ -7,8 +7,121 @@
 #include "network.hpp"
 
 static const int BACKLOG = 500;
+static const int NET_BUFF_SIZE = MAP_WIDTH * MAP_HEIGHT + 6;
+
+const std::string HOST_ARG = "-h";
+const std::string CLIENT_ARG = "-c";
 
 Network network;
+
+Network::~Network() {
+	if (sfd >= 0) {
+		close(sfd);
+	}
+	if (lfd >= 0) {
+		close(lfd);
+	}
+}
+
+static uint8_t* serialize(std::shared_ptr<GameState> state) {
+	uint8_t *buff = new uint8_t[NET_BUFF_SIZE];
+	GamePiecePtr g = state->active;
+	if (g) {
+		buff[0] = g->x;
+		buff[1] = g->y;
+		buff[2] = g->rot;
+		buff[3] = g->map.size() == 4 ? 1 : 0;	// need to know if I piece or not
+		// store piece map array in 2 bytes
+		uint16_t map = 0;
+		uint16_t bit = 0x1;
+		for (std::size_t i = 0; i < g->map.size(); ++i) {
+			for (std::size_t j = 0; j < g->map.size(); ++j) {
+				if (g->map[i][j]) {
+					map |= bit;
+				}
+				bit <<= 1;
+			}
+		}
+		map = htons(map);
+		memcpy(&buff[4], &map, 2);
+	} else {
+		memset(buff, 0xFF, 6); // All 0xFF means NULL
+	}
+	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
+		buff[6+i] = state->tileMap[i];
+	}
+	return buff;
+}
+
+static std::shared_ptr<GameState> deserialize(uint8_t* buff) {
+	std::shared_ptr<GameState> state =  std::make_shared<GameState>();
+	GamePiecePtr g = NULL;
+	if ((buff[2] & buff[3]) != 0xFF) {
+		g = std::make_shared<GamePiece>();
+		g->x = buff[0];
+		g->y = buff[1];
+		g->rot = buff[2];
+		uint8_t iflag = buff[3];
+		uint16_t map = 0;
+		memcpy(&map, &buff[4], 2);
+		map = ntohs(map);
+		int ms = 3 + iflag;
+		PieceMap pm(ms);
+		for (int i = 0; i < ms; ++i) {
+			std::vector<bool> v(ms);
+			for (int j = 0; j < ms; ++j) {
+				v[j] = map & 0x1;
+				map >>= 1;
+			}
+			pm[i] = v;
+		}
+		g->map = pm;
+	}
+	state->active = g;
+	TileMap tm(MAP_WIDTH * MAP_HEIGHT);
+	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
+		tm[i] = buff[6+i];
+	}
+	state->tileMap = tm;
+	return state;
+}
+
+std::shared_ptr<GameState> Network::rec() {
+	std::shared_ptr<GameState> ptr = NULL;
+	if (sfd >= 0) {
+		if (!read_buff) {
+			read_buff = new uint8_t[NET_BUFF_SIZE];
+			buff_len = 0;
+		}
+		uint8_t *buff = new uint8_t[NET_BUFF_SIZE];
+		int res = read(sfd, buff, NET_BUFF_SIZE);
+		int rem = buff_len + res - NET_BUFF_SIZE;
+		int rel = rem ? res : res - rem;
+		if (rel > 0) {
+			memcpy(read_buff + buff_len, &buff[0], rel);
+			buff_len += rel;
+			if (buff_len == NET_BUFF_SIZE) {
+				ptr = deserialize(read_buff);
+				buff_len = 0;
+				memset(read_buff, 0, NET_BUFF_SIZE);
+			}
+			if (rem > 0) {
+				memcpy(read_buff, &buff[rel], rem);
+				buff_len = rem;
+			}
+		}
+		delete buff;
+	}
+	return ptr;
+}
+
+void Network::send_state(std::shared_ptr<GameState> state) {
+	if (sfd >= 0) {
+		uint8_t *buff = serialize(state);
+		send(sfd, buff, NET_BUFF_SIZE, 0);
+		delete buff;
+	}
+}
 
 int Network::conn(std::string hostname, std::string port) {
 	struct addrinfo hints, *res, *rptr;
@@ -54,7 +167,7 @@ int Network::host(std::string port) {
 	}
 
 	int so_reuseaddr = 1;
-	setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &so_reuseaddr, sizeof so_reuseaddr);
+	setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &so_reuseaddr, sizeof(so_reuseaddr));
 
 	struct sockaddr_in saddr;
 	struct sockaddr_in caddr;
@@ -82,7 +195,4 @@ int Network::host(std::string port) {
 		return -1;
 	}
 	return 0;
-}
-
-void Network::update(TileMap tileMap, std::shared_ptr<GamePiece> active) {
 }
