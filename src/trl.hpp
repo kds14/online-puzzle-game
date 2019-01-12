@@ -31,4 +31,6 @@ struct GameObject {
 
 typedef std::vector<std::shared_ptr<GameObject>> GameObjs;
 
+typedef std::vector<uint8_t> TileMap;
+
 #endif
