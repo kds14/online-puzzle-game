@@ -15,6 +15,12 @@ class Game {
 		std::shared_ptr<GamePiece> active;
 		GameObjs objects;
 	private:
+		bool rightPriority;
+		int moveUp, moveDown, moveRight, moveLeft;
+		int gravityTimer, moveTimer, lockTimer;
+		bool rngInit;
+		int lockTimerMax;
+
 		void moveActive();
 		void rotateActive(bool cc);
 		void placeActive();
@@ -22,11 +28,6 @@ class Game {
 		std::shared_ptr<GamePiece> nextPiece();
 		void checkLineClear();
 		void printMap();
-
-		bool rightPriority = false;
-		int moveUp, moveDown, moveRight, moveLeft;
-		int gravityTimer;
-		bool rngInit = 0;
 };
 
 

@@ -6,10 +6,13 @@
 Game game;
 
 Game::Game() {
-	objects = std::vector<std::shared_ptr<GameObject>>(10);
+	objects = std::vector<std::shared_ptr<GameObject>>();
 	active = NULL;
 	moveUp = 0, moveDown = 0, moveRight = 0, moveUp = 0;
-	gravityTimer = 0;
+	gravityTimer = 0, moveTimer = 0, lockTimer = -1;
+	lockTimerMax = 50;
+	rngInit = 0;
+	rightPriority = false;
 	tileMap = std::vector<uint8_t>(200);
 }
 
@@ -97,6 +100,11 @@ void Game::checkLineClear() {
 }
 
 void Game::placeActive() {
+	if (lockTimer == -1) {
+		lockTimer = lockTimerMax;
+		return;
+	}
+	lockTimer = -1;
 	int x, y;
 	for (std::size_t i = 0; i < active->map.size(); ++i) {
 		for (std::size_t j = 0; j < active->map[i].size(); ++j) {
@@ -112,6 +120,11 @@ void Game::placeActive() {
 }
 
 void Game::moveActive() {
+	if (lockTimer > 0) {
+		--lockTimer;
+	}
+
+	// horizontal movement logic
 	int oldx = active->x;
 	int oldy = active->y;
 	if (rightPriority && moveRight) {
@@ -129,21 +142,52 @@ void Game::moveActive() {
 	}
 	if (checkCollision())
 		active->x = oldx;
+
+	// down arrow movement logic
 	oldx = active->x;
-	active->y += moveDown;
-	if (checkCollision()) {
-		active->y = oldy;
-		placeActive();
-		return;
+	if (moveDown) {
+		if (++moveTimer == 2) {
+			active->y += moveDown;
+			moveTimer = 0;
+			if (checkCollision()) {
+				active->y = oldy;
+				placeActive();
+				if (!active)
+					return;
+			}
+		}
+	} else {
+		moveTimer = 0;
 	}
-	oldy = active->y;
-	if (++gravityTimer == 64) {
+	// if theres no lock timer, do gravity logic
+	if (lockTimer == -1) {
+		oldy = active->y;
+		if (++gravityTimer == 1) {
+			active->y++;
+			gravityTimer = 0;
+		}
+		if (checkCollision()) {
+			active->y = oldy;
+			placeActive();
+		} 
+	}
+	// if theres still a piece, do lock timer logic
+	if (active) {
 		active->y++;
-		gravityTimer = 0;
-	}
-	if (checkCollision()) {
-		active->y = oldy;
-		placeActive();
+		bool col = checkCollision();
+		if (lockTimer > 0 && !col) {
+			lockTimer = -1;
+		} else if (lockTimer == 0 && col) {
+			active->y--;
+			placeActive();
+			lockTimer = -1;
+			return;
+		} else if (col && lockTimer == -1) {
+			lockTimer = lockTimerMax;
+		}
+		active->y--;
+	} else {
+		lockTimer = -1;
 	}
 }
 
