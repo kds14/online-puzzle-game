@@ -18,13 +18,15 @@ class Platform {
 		double remainder = 0;
 		uint32_t frameTime = 0;
 		static const double msPerFrame;
-		int p2Offset = 0;
-		int p1Offset = 0;
+		int p2Offset;
+		int p1Offset;
 		int yOffset = 2;
+		std::shared_ptr<GamePiece> oldActive;
+		std::vector<uint8_t> oldTileMap;
 
-		void drawTileMap(std::vector<uint8_t> tileMap, int offset);
+		void drawTileMap(std::vector<uint8_t> tileMap, bool p1);
 		void drawObjs(GameObjs objects);
-		void drawActive(std::shared_ptr<GamePiece> active, int offset);
+		void drawActive(std::shared_ptr<GamePiece> active, bool p1);
 		void handleEvents();
 };
 

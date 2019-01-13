@@ -6,8 +6,6 @@
 #include "trl.hpp"
 #include "piece.hpp"
 
-enum msg_type {CON = 0x00, DATA = 0x01, DISCON = 0x03};
-
 extern const std::string HOST_ARG;
 extern const std::string CLIENT_ARG;
 
@@ -21,8 +19,8 @@ class Network {
 	private:
 		int sfd = -1;
 		int lfd = -1;
-		uint8_t* read_buff = NULL;
-		int buff_len;
+
+		void setupfd(int fd);
 };
 
 extern Network network;

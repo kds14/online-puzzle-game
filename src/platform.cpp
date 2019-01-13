@@ -2,10 +2,11 @@
 
 Platform platform;
 
-void Platform::drawTileMap(std::vector<uint8_t> tileMap, int offset) {
+void Platform::drawTileMap(std::vector<uint8_t> tileMap, bool p1) {
 	// draw blocks
 	std::vector<SDL_Rect> rects;
 	int count = 0;
+	int offset = p1 ? p1Offset : p2Offset;
 	for(int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
 		if (!tileMap[i])
 			continue;
@@ -29,9 +30,10 @@ void Platform::drawTileMap(std::vector<uint8_t> tileMap, int offset) {
 	SDL_RenderDrawRect(renderer, &bRect);
 }
 
-void Platform::drawActive(std::shared_ptr<GamePiece> active, int offset) {
+void Platform::drawActive(std::shared_ptr<GamePiece> active, bool p1) {
 	std::vector<SDL_Rect> rects;
 	int count = 0;
+	int offset = p1 ? p1Offset : p2Offset;
 	for(std::size_t i = 0; i < active->map.size(); ++i) {
 		for(std::size_t j = 0; j < active->map[i].size(); ++j) {
 			if (!active->map[i][j])
@@ -55,6 +57,9 @@ bool Platform::init(int width, int height) {
 		p1Offset = 1;
 		width = width * 3 + 2;
 		p2Offset = width - 11;
+	} else {
+		p1Offset = 0;
+		p2Offset = 0;
 	}
 	height = height + 4;
 
@@ -118,13 +123,23 @@ void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs obje
 	// draw and clear renderer
 	drawObjs(objects);
 	if (active)
-		drawActive(active, p1Offset);
-	drawTileMap(tileMap, p1Offset);
+		drawActive(active, true);
+	drawTileMap(tileMap, true);
 	if (game_flags & TWOP_FLAG) {
 		if (p2state) {
-			if (p2state->active)
-				drawActive(p2state->active, p2Offset);
-			drawTileMap(p2state->tileMap, p2Offset);
+			oldActive = NULL;
+			oldTileMap = std::vector<uint8_t>();
+			if (p2state->active) {
+				drawActive(p2state->active, false);
+				oldActive = active;
+			}
+			oldTileMap = p2state->tileMap;
+			drawTileMap(p2state->tileMap, false);
+		} else {
+			if (oldActive)
+				drawActive(oldActive, false);
+			if (oldTileMap.size() > 0)
+				drawTileMap(oldTileMap, false);
 		}
 	}
 	SDL_RenderPresent(renderer);

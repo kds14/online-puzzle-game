@@ -88,27 +88,22 @@ static std::shared_ptr<GameState> deserialize(uint8_t* buff) {
 
 std::shared_ptr<GameState> Network::rec() {
 	std::shared_ptr<GameState> ptr = NULL;
+
+	fd_set rfds;
+	struct timeval tv;
+	FD_ZERO(&rfds);
+	FD_SET(sfd, &rfds);
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+
+	if (select(sfd + 1, &rfds, NULL, NULL, &tv) <= 0) {
+		return ptr;
+	}
 	if (sfd >= 0) {
-		if (!read_buff) {
-			read_buff = new uint8_t[NET_BUFF_SIZE];
-			buff_len = 0;
-		}
 		uint8_t *buff = new uint8_t[NET_BUFF_SIZE];
 		int res = read(sfd, buff, NET_BUFF_SIZE);
-		int rem = buff_len + res - NET_BUFF_SIZE;
-		int rel = rem ? res : res - rem;
-		if (rel > 0) {
-			memcpy(read_buff + buff_len, &buff[0], rel);
-			buff_len += rel;
-			if (buff_len == NET_BUFF_SIZE) {
-				ptr = deserialize(read_buff);
-				buff_len = 0;
-				memset(read_buff, 0, NET_BUFF_SIZE);
-			}
-			if (rem > 0) {
-				memcpy(read_buff, &buff[rel], rem);
-				buff_len = rem;
-			}
+		if (res > 0) {
+			ptr = deserialize(buff);
 		}
 		delete buff;
 	}
