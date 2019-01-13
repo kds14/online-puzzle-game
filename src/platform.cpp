@@ -54,13 +54,13 @@ void Platform::drawActive(std::shared_ptr<GamePiece> active, bool p1) {
 bool Platform::init(int width, int height) {
 	// change layout if 2p
 	if (game_flags & TWOP_FLAG) {
-		p1Offset = 1;
 		width = width * 3 + 2;
 		p2Offset = width - 11;
 	} else {
-		p1Offset = 0;
+		width += 2;
 		p2Offset = 0;
 	}
+	p1Offset = 1;
 	height = height + 4;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {

@@ -7,7 +7,7 @@
 #include "network.hpp"
 
 const int MAP_WIDTH = 10;
-const int MAP_HEIGHT = 20;
+const int MAP_HEIGHT = 18;
 const int TILE_SIZE = 32;
 
 uint32_t game_flags = 0;
