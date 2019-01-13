@@ -151,6 +151,8 @@ void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs obje
 	// wait
 	double trueWaitTime = Platform::msPerFrame - SDL_GetTicks() + frameTime + remainder;
 	int waitTime = trueWaitTime;
+	if (game_flags & LOSE_FLAG)
+		waitTime = 1000;
 	if (waitTime > 0) {
 		remainder = trueWaitTime - waitTime;
 		SDL_Delay(waitTime);

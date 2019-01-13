@@ -23,7 +23,7 @@ class Game {
 
 		void moveActive();
 		void rotateActive(bool cc);
-		void placeActive();
+		void placeActive(bool force);
 		bool checkCollision();
 		std::shared_ptr<GamePiece> nextPiece();
 		void checkLineClear();

@@ -11,6 +11,9 @@ const int MAP_HEIGHT = 18;
 const int TILE_SIZE = 32;
 
 uint32_t game_flags = 0;
+const uint32_t LINE_CLEAR = 0x1;
+const uint32_t TWOP_FLAG = 0x2;
+const uint32_t LOSE_FLAG = 0x4;
 
 void handleInput(InputEvent e) {
 	game.handleInput(e);
@@ -70,6 +73,8 @@ int main(int argc, char** argv) {
 		}
 		platform.update(time, game.tileMap, game.objects, game.active, p2state);
 		time++;
+		if (game_flags & LOSE_FLAG)
+			exit(0);
 	}
 	return 0;
 }

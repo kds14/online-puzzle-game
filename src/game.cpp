@@ -99,12 +99,14 @@ void Game::checkLineClear() {
 	}
 }
 
-void Game::placeActive() {
-	if (lockTimer == -1) {
-		lockTimer = lockTimerMax;
-		return;
+void Game::placeActive(bool force) {
+	if (!force) {
+		if (lockTimer == -1) {
+			lockTimer = lockTimerMax;
+			return;
+		}
+		lockTimer = -1;
 	}
-	lockTimer = -1;
 	int x, y;
 	for (std::size_t i = 0; i < active->map.size(); ++i) {
 		for (std::size_t j = 0; j < active->map[i].size(); ++j) {
@@ -151,7 +153,7 @@ void Game::moveActive() {
 			moveTimer = 0;
 			if (checkCollision()) {
 				active->y = oldy;
-				placeActive();
+				placeActive(false);
 				if (!active)
 					return;
 			}
@@ -168,7 +170,7 @@ void Game::moveActive() {
 		}
 		if (checkCollision()) {
 			active->y = oldy;
-			placeActive();
+			placeActive(false);
 		} 
 	}
 	// if theres still a piece, do lock timer logic
@@ -179,7 +181,7 @@ void Game::moveActive() {
 			lockTimer = -1;
 		} else if (lockTimer == 0 && col) {
 			active->y--;
-			placeActive();
+			placeActive(false);
 			lockTimer = -1;
 			return;
 		} else if (col && lockTimer == -1) {
@@ -236,6 +238,10 @@ void Game::update(uint32_t time) {
 		return;
 	if (!active) {
 		active = nextPiece();
+		if (checkCollision()) {
+			game_flags |= LOSE_FLAG;
+			placeActive(true);
+		}
 	}
 	if (active) {
 		moveActive();

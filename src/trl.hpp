@@ -13,8 +13,9 @@ extern const int MAP_HEIGHT;
 extern const int TILE_SIZE;
 
 extern uint32_t game_flags;
-static const uint32_t LINE_CLEAR = 0x1;
-static const uint32_t TWOP_FLAG = 0x2;
+extern const uint32_t LINE_CLEAR;
+extern const uint32_t TWOP_FLAG;
+extern const uint32_t LOSE_FLAG;
 
 enum Key {UP, DOWN, LEFT, RIGHT, ROT_LEFT, ROT_RIGHT};
 
