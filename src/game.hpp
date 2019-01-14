@@ -1,6 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <list>
+
 #include "trl.hpp"
 #include "piece.hpp"
 
@@ -19,8 +21,8 @@ class Game {
 		int gravityTimer, moveTimer, lockTimer;
 		bool rngInit;
 		int lockTimerMax;
-		int playerHp;
-		int maxPlayerHp;
+		int playerHp, maxPlayerHp;
+		std::list<int> toClear;
 
 		void onOverflow();
 		void moveActive();
@@ -30,6 +32,9 @@ class Game {
 		std::shared_ptr<GamePiece> nextPiece();
 		void checkLineClear();
 		void printMap();
+		std::vector<int> getNeighbors(int idx);
+		void applyGravity(int idx);
+		bool checkTileCollision(int idx);
 };
 
 

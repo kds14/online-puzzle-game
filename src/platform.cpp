@@ -7,7 +7,7 @@ struct TileColor {
 	uint8_t r, g, b;
 };
 
-static TileColor tileColors[] = {{255,0,0}, {0,255,0}, {0,0,255}};
+static TileColor tileColors[] = {{251,242,54}, {172,50,50}, {106,190,48}, {91,110,225}};
 
 void Platform::drawTileMap(std::vector<uint8_t> tileMap, bool p1) {
 	// draw blocks
