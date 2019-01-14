@@ -36,6 +36,7 @@ class Game {
 		void applyGravity(int idx);
 		bool checkTileCollision(int idx);
 		void absCheckLineClear();
+		void applyGravityByGroup();
 };
 
 
