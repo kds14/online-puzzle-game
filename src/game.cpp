@@ -14,6 +14,10 @@ Game::Game() {
 	rngInit = 0;
 	rightPriority = false;
 	state = std::make_shared<GameState>();
+	/*state->tileMap[(MAP_HEIGHT - 1) * MAP_WIDTH + 5] = 3;
+	state->tileMap[(MAP_HEIGHT - 2) * MAP_WIDTH + 5] = 3;
+	state->tileMap[(MAP_HEIGHT - 3) * MAP_WIDTH + 5] = 2;
+	state->tileMap[(MAP_HEIGHT - 1) * MAP_WIDTH + 4] = 3;*/
 	maxPlayerHp = 100;
 	playerHp = maxPlayerHp;
 }
@@ -105,52 +109,13 @@ std::vector<int> Game::getNeighbors(int idx) {
 	return r;
 }
 
-void Game::checkLineClear() {
-	std::list<int> cleared;
-	std::vector<bool> vis(MAP_HEIGHT * MAP_WIDTH);
-	for (std::size_t i = 0; i < state->active->map.size(); ++i) {
-		for (std::size_t j = 0; j < state->active->map[i].size(); ++j) {
-			int idx = (state->active->y + i) * MAP_WIDTH + (state->active->x + j);
-			if (state->active->map[i][j] <= 1 || vis[idx])
-				continue;
-			std::list<int> poss;
-			std::list<int> match;
-			poss.push_back(idx);
-			match.push_back(idx);
-			while(poss.size() > 0) {
-				int f = poss.front();
-				poss.pop_front();
-				vis[f] = true;
-				uint8_t fc = state->tileMap[f];
-				auto n = getNeighbors(f);
-				for (std::size_t k = 0; k < n.size(); ++k) {
-					if (fc == state->tileMap[n[k]] && !vis[n[k]]) {
-						poss.push_back(n[k]);
-						match.push_back(n[k]);
-					}
-				}
-			}
-			if (match.size() >= 4) {
-				cleared.splice(cleared.end(), match);
-			}
-		}
-	}
-	if (cleared.size() > 0) {
-		game_flags |= LINE_CLEAR;
-		for (auto &i: cleared) {
-			state->tileMap[i] = 1;
-		}
-		toClear = cleared;
-	}
-}
-
 void Game::absCheckLineClear() {
 	std::list<int> cleared;
 	std::vector<bool> vis(MAP_HEIGHT * MAP_WIDTH);
 	for (int i = 0; i < MAP_HEIGHT; ++i) {
 		for (int j = 0; j < MAP_WIDTH; ++j) {
 			int idx = i * MAP_WIDTH + j;
-			if (state->tileMap[idx] <= 1 || vis[idx])
+			if (!state->tileMap[idx] || vis[idx])
 				continue;
 			std::list<int> poss;
 			std::list<int> match;
@@ -164,6 +129,7 @@ void Game::absCheckLineClear() {
 				auto n = getNeighbors(f);
 				for (std::size_t k = 0; k < n.size(); ++k) {
 					if (fc == state->tileMap[n[k]] && !vis[n[k]]) {
+						vis[n[k]] = true;
 						poss.push_back(n[k]);
 						match.push_back(n[k]);
 					}
@@ -296,6 +262,11 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 	int idx = rand() % 3;
 	if (!idx)
 		ptr->y += 1;
+	/*ptr->map = PieceMap(pieces[1]);
+	ptr->map[1][0] = 3;
+	ptr->map[1][1] = 2;
+	ptr->map[1][2] = 3;
+	ptr->map[2][1] = 4;*/
 	ptr->map = PieceMap(pieces[idx]);
 	for (auto &row : ptr->map) {
 		for (auto &item : row) {

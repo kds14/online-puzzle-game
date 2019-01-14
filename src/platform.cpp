@@ -59,8 +59,9 @@ bool Platform::init(int width, int height) {
 	// change layout if 2p
 	if (game_flags & TWOP_FLAG) {
 		width = width * 3 + 2;
-		p2Offset = width - 11;
+		p2Offset = width - 8;
 	} else {
+		width *= 2;
 		width += 2;
 		p2Offset = 0;
 	}
