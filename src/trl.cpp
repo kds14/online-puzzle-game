@@ -6,7 +6,7 @@
 #include "trl.hpp"
 #include "network.hpp"
 
-const int MAP_WIDTH = 10;
+const int MAP_WIDTH = 8;
 const int MAP_HEIGHT = 18;
 const int TILE_SIZE = 32;
 

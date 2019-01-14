@@ -165,7 +165,7 @@ void Game::moveActive() {
 	// if theres no lock timer, do gravity logic
 	if (lockTimer == -1) {
 		oldy = state->active->y;
-		if (++gravityTimer == 1) {
+		if (++gravityTimer == 32) {
 			state->active->y++;
 			gravityTimer = 0;
 		}
@@ -203,11 +203,9 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 	ptr->x = 3;
 	ptr->y = -1;
 	ptr->rot = 1;
-	int idx = rand() % 7;
+	int idx = rand() % 3;
 	if (!idx)
-		ptr->y -= 1;
-	else if (idx == 1)
-		ptr->rot = 0;
+		ptr->y += 1;
 	ptr->map = PieceMap(pieces[idx]);
 	return ptr;
 }

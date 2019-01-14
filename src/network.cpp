@@ -69,7 +69,7 @@ static std::shared_ptr<GameState> deserialize(uint8_t* buff) {
 		int ms = 3 + iflag;
 		PieceMap pm(ms);
 		for (int i = 0; i < ms; ++i) {
-			std::vector<bool> v(ms);
+			std::vector<uint8_t> v(ms);
 			for (int j = 0; j < ms; ++j) {
 				v[j] = map & 0x1;
 				map >>= 1;
