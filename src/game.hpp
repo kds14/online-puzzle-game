@@ -35,6 +35,7 @@ class Game {
 		std::vector<int> getNeighbors(int idx);
 		void applyGravity(int idx);
 		bool checkTileCollision(int idx);
+		void absCheckLineClear();
 };
 
 

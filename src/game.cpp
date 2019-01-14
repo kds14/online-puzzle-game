@@ -111,7 +111,7 @@ void Game::checkLineClear() {
 	for (std::size_t i = 0; i < state->active->map.size(); ++i) {
 		for (std::size_t j = 0; j < state->active->map[i].size(); ++j) {
 			int idx = (state->active->y + i) * MAP_WIDTH + (state->active->x + j);
-			if (!state->active->map[i][j] || vis[idx])
+			if (state->active->map[i][j] <= 1 || vis[idx])
 				continue;
 			std::list<int> poss;
 			std::list<int> match;
@@ -144,6 +144,45 @@ void Game::checkLineClear() {
 	}
 }
 
+void Game::absCheckLineClear() {
+	std::list<int> cleared;
+	std::vector<bool> vis(MAP_HEIGHT * MAP_WIDTH);
+	for (int i = 0; i < MAP_HEIGHT; ++i) {
+		for (int j = 0; j < MAP_WIDTH; ++j) {
+			int idx = i * MAP_WIDTH + j;
+			if (state->tileMap[idx] <= 1 || vis[idx])
+				continue;
+			std::list<int> poss;
+			std::list<int> match;
+			poss.push_back(idx);
+			match.push_back(idx);
+			while(poss.size() > 0) {
+				int f = poss.front();
+				poss.pop_front();
+				vis[f] = true;
+				uint8_t fc = state->tileMap[f];
+				auto n = getNeighbors(f);
+				for (std::size_t k = 0; k < n.size(); ++k) {
+					if (fc == state->tileMap[n[k]] && !vis[n[k]]) {
+						poss.push_back(n[k]);
+						match.push_back(n[k]);
+					}
+				}
+			}
+			if (match.size() >= 5) {
+				cleared.splice(cleared.end(), match);
+			}
+		}
+	}
+	if (cleared.size() > 0) {
+		game_flags |= LINE_CLEAR;
+		for (auto &i: cleared) {
+			state->tileMap[i] = 1;
+		}
+		toClear = cleared;
+	}
+}
+
 void Game::placeActive(bool force) {
 	if (!force) {
 		if (lockTimer == -1) {
@@ -153,16 +192,23 @@ void Game::placeActive(bool force) {
 		lockTimer = -1;
 	}
 	int x, y;
+	std::list<int> placed;
 	for (std::size_t i = 0; i < state->active->map.size(); ++i) {
 		for (std::size_t j = 0; j < state->active->map[i].size(); ++j) {
 			if (!state->active->map[i][j])
 				continue;
 			x = state->active->x + j;
 			y = state->active->y + i;
-			state->tileMap[y * MAP_WIDTH + x] = state->active->map[i][j];
+			int idx = y * MAP_WIDTH + x;
+			placed.push_back(idx);
+			state->tileMap[idx] = state->active->map[i][j];
 		}
 	}
-	checkLineClear();
+	placed.sort([](int a, int b) {return a > b;});
+	for (auto &i: placed) {
+		applyGravity(i);
+	}
+	absCheckLineClear();
 	state->active = NULL;
 }
 
@@ -253,7 +299,7 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 	ptr->map = PieceMap(pieces[idx]);
 	for (auto &row : ptr->map) {
 		for (auto &item : row) {
-			item *= (rand() % 3) + 2;
+			item *= (rand() % 4) + 2;
 		}
 	}
 	return ptr;
@@ -309,11 +355,14 @@ void Game::update(uint32_t time) {
 			state->tileMap[i] = 0;
 		}
 		toClear = std::list<int>();
-		for (int i = MAP_WIDTH * MAP_HEIGHT; i >= 0; --i) {
+		for (int i = MAP_WIDTH * MAP_HEIGHT - 1; i >= 0; --i) {
 			if (!state->tileMap[i])
 				continue;
 			applyGravity(i);
 		}
+		absCheckLineClear();
+		game_flags |= LINE_CLEAR;
+		return;
 	}
 	if (!state->active) {
 		state->active = nextPiece();

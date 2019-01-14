@@ -6,8 +6,8 @@
 #include "trl.hpp"
 #include "network.hpp"
 
-const int MAP_WIDTH = 8;
-const int MAP_HEIGHT = 18;
+const int MAP_WIDTH = 7;
+const int MAP_HEIGHT = 15;
 const int TILE_SIZE = 32;
 
 uint32_t game_flags = 0;

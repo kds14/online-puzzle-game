@@ -7,7 +7,8 @@ struct TileColor {
 	uint8_t r, g, b;
 };
 
-static TileColor tileColors[] = {{251,242,54}, {172,50,50}, {106,190,48}, {91,110,225}};
+static TileColor tileColors[] = {{143,86,59}, {172,50,50}, {106,190,48},
+	{91,110,225}, {251,242,54}};
 
 void Platform::drawTileMap(std::vector<uint8_t> tileMap, bool p1) {
 	// draw blocks
@@ -150,7 +151,8 @@ void Platform::drawHealthBar(uint8_t hp, bool p1) {
 	health.w = (hp/255.0) * MAP_WIDTH * TILE_SIZE;
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(renderer, &bar);
-	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+	TileColor c = tileColors[1];
+	SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
 	SDL_RenderFillRect(renderer, &health);
 }
 
