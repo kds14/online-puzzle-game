@@ -1,5 +1,6 @@
 #include <time.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "game.hpp"
 
@@ -115,7 +116,7 @@ void Game::placeActive(bool force) {
 				continue;
 			x = state->active->x + j;
 			y = state->active->y + i;
-			state->tileMap[y * MAP_WIDTH + x] = 1;
+			state->tileMap[y * MAP_WIDTH + x] = state->active->map[i][j];
 		}
 	}
 	checkLineClear();
@@ -197,7 +198,7 @@ void Game::moveActive() {
 std::shared_ptr<GamePiece> Game::nextPiece() {
 	if (!rngInit) {
 		rngInit = 1;
-		srand(time(NULL));
+		srand(time(NULL) + getpid());
 	}
 	auto ptr = std::make_shared<GamePiece>();
 	ptr->x = 3;
@@ -207,6 +208,11 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 	if (!idx)
 		ptr->y += 1;
 	ptr->map = PieceMap(pieces[idx]);
+	for (auto &row : ptr->map) {
+		for (auto &item : row) {
+			item *= (rand() % 3) + 1;
+		}
+	}
 	return ptr;
 }
 

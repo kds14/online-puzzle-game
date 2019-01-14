@@ -3,10 +3,14 @@
 Platform platform;
 //SDL_Texture *tex;
 
+struct TileColor {
+	uint8_t r, g, b;
+};
+
+static TileColor tileColors[] = {{255,0,0}, {0,255,0}, {0,0,255}};
+
 void Platform::drawTileMap(std::vector<uint8_t> tileMap, bool p1) {
 	// draw blocks
-	std::vector<SDL_Rect> rects;
-	int count = 0;
 	int offset = p1 ? p1Offset : p2Offset;
 	for(int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
 		if (!tileMap[i])
@@ -16,11 +20,10 @@ void Platform::drawTileMap(std::vector<uint8_t> tileMap, bool p1) {
 		rect.x = TILE_SIZE * (offset + i % MAP_WIDTH);
 		rect.w = TILE_SIZE;
 		rect.h = TILE_SIZE;
-		rects.push_back(rect);
-		count++;
+		TileColor c = tileColors[tileMap[i]-1];
+		SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, SDL_ALPHA_OPAQUE);
+		SDL_RenderFillRect(renderer, &rect);
 	}
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderFillRects(renderer, &rects[0], count);
 
 	// draw border
 	SDL_Rect bRect;
@@ -28,12 +31,11 @@ void Platform::drawTileMap(std::vector<uint8_t> tileMap, bool p1) {
 	bRect.x = offset * TILE_SIZE;
 	bRect.w = TILE_SIZE * MAP_WIDTH;
 	bRect.h = TILE_SIZE * MAP_HEIGHT;
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderDrawRect(renderer, &bRect);
 }
 
 void Platform::drawActive(std::shared_ptr<GamePiece> active, bool p1) {
-	std::vector<SDL_Rect> rects;
-	int count = 0;
 	int offset = p1 ? p1Offset : p2Offset;
 	for(std::size_t i = 0; i < active->map.size(); ++i) {
 		for(std::size_t j = 0; j < active->map[i].size(); ++j) {
@@ -44,12 +46,11 @@ void Platform::drawActive(std::shared_ptr<GamePiece> active, bool p1) {
 			rect.x = (offset + active->x + j) * TILE_SIZE;
 			rect.w = TILE_SIZE;
 			rect.h = TILE_SIZE;
-			rects.push_back(rect);
-			count++;
+			TileColor c = tileColors[active->map[i][j] - 1];
+			SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, SDL_ALPHA_OPAQUE);
+			SDL_RenderFillRect(renderer, &rect);
 		}
 	}
-	SDL_SetRenderDrawColor(renderer, 255, 255, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderFillRects(renderer, &rects[0], count);
 }
 
 
@@ -80,16 +81,16 @@ bool Platform::init(int width, int height) {
 	SDL_RenderPresent(renderer);
 
 	/*if (IMG_Init(IMG_INIT_PNG) < 0) {
-		fprintf(stderr, "SDL_image failed to initialize: %s\n", IMG_GetError());
-		return false;
-	}
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
-	SDL_Surface *surf = IMG_Load("/home/kds/Pictures/junkai_smol.png");
-	if (!surf) {
-		printf("Failed to load img: %s\n", IMG_GetError());
-	}
-	tex = SDL_CreateTextureFromSurface(renderer, surf);
-	SDL_FreeSurface(surf);*/
+	  fprintf(stderr, "SDL_image failed to initialize: %s\n", IMG_GetError());
+	  return false;
+	  }
+	  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+	  SDL_Surface *surf = IMG_Load("/home/kds/Pictures/junkai_smol.png");
+	  if (!surf) {
+	  printf("Failed to load img: %s\n", IMG_GetError());
+	  }
+	  tex = SDL_CreateTextureFromSurface(renderer, surf);
+	  SDL_FreeSurface(surf);*/
 
 	return true;
 }
@@ -147,7 +148,7 @@ void Platform::drawHealthBar(uint8_t hp, bool p1) {
 	health.y = bar.y;
 	health.h = bar.h;
 	health.w = (hp/255.0) * MAP_WIDTH * TILE_SIZE;
-	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(renderer, &bar);
 	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 	SDL_RenderFillRect(renderer, &health);
@@ -170,6 +171,7 @@ void Platform::update(uint32_t time, std::shared_ptr<GameState> p1state, GameObj
 			oldState->tileMap = p2state->tileMap;
 			drawTileMap(p2state->tileMap, false);
 			drawHealthBar(p2state->hp, false);
+			oldState->hp = p2state->hp;
 		} else if (oldState) {
 			if (oldState->active)
 				drawActive(oldState->active, false);
@@ -179,12 +181,12 @@ void Platform::update(uint32_t time, std::shared_ptr<GameState> p1state, GameObj
 		}
 	}
 	/*SDL_Rect target;
-	target.x = (MAP_WIDTH + 4) * TILE_SIZE;
-	target.y = TILE_SIZE;
-	target.w = (MAP_WIDTH / 2) * TILE_SIZE;
-	target.h = (1200.0/850)*((MAP_WIDTH / 2) * TILE_SIZE);
-	SDL_RenderCopy(renderer, tex, NULL, &target);
-	*/
+	  target.x = (MAP_WIDTH + 4) * TILE_SIZE;
+	  target.y = TILE_SIZE;
+	  target.w = (MAP_WIDTH / 2) * TILE_SIZE;
+	  target.h = (1200.0/850)*((MAP_WIDTH / 2) * TILE_SIZE);
+	  SDL_RenderCopy(renderer, tex, NULL, &target);
+	 */
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);

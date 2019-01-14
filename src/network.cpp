@@ -7,7 +7,7 @@
 #include "network.hpp"
 
 static const int BACKLOG = 500;
-static const int NET_BUFF_SIZE = MAP_WIDTH * MAP_HEIGHT + 6;
+static const int NET_BUFF_SIZE = MAP_WIDTH * MAP_HEIGHT + 30;
 
 const std::string HOST_ARG = "-h";
 const std::string CLIENT_ARG = "-c";
@@ -30,26 +30,21 @@ static uint8_t* serialize(std::shared_ptr<GameState> state) {
 		buff[0] = g->x;
 		buff[1] = g->y;
 		buff[2] = g->rot;
-		buff[3] = g->map.size() == 4 ? 1 : 0;	// need to know if I piece or not
-		// store piece map array in 2 bytes
-		uint16_t map = 0;
-		uint16_t bit = 0x1;
-		for (std::size_t i = 0; i < g->map.size(); ++i) {
-			for (std::size_t j = 0; j < g->map.size(); ++j) {
-				if (g->map[i][j]) {
-					map |= bit;
-				}
-				bit <<= 1;
+		int h = g->map.size();
+		int w = 0;
+		for (uint8_t i = 0; i < h; ++i) {
+			w = g->map.size();
+			for (uint8_t j = 0; j < w; ++j) {
+				buff[4 + i * w + j] = g->map[i][j];
 			}
 		}
-		map = htons(map);
-		memcpy(&buff[4], &map, 2);
+		buff[3] = ((0xF & w) << 4) | (0xF & h);
 	} else {
-		memset(buff, 0xFF, 6); // All 0xFF means NULL
+		memset(buff, 0xFF, 29); // All 0xFF means NULL
 	}
-	buff[6] = state->hp;
+	buff[29] = state->hp;
 	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
-		buff[7+i] = state->tileMap[i];
+		buff[30+i] = state->tileMap[i];
 	}
 	return buff;
 }
@@ -62,27 +57,23 @@ static std::shared_ptr<GameState> deserialize(uint8_t* buff) {
 		g->x = buff[0];
 		g->y = buff[1];
 		g->rot = buff[2];
-		uint8_t iflag = buff[3];
-		uint16_t map = 0;
-		memcpy(&map, &buff[4], 2);
-		map = ntohs(map);
-		int ms = 3 + iflag;
-		PieceMap pm(ms);
-		for (int i = 0; i < ms; ++i) {
-			std::vector<uint8_t> v(ms);
-			for (int j = 0; j < ms; ++j) {
-				v[j] = map & 0x1;
-				map >>= 1;
+		int h = buff[3] & 0xF;
+		int w = (buff[3] >> 4) & 0xF;
+		PieceMap pm(h);
+		for (int i = 0; i < h; ++i) {
+			std::vector<uint8_t> v(w);
+			for (int j = 0; j < w; ++j) {
+				v[j] = buff[4 + i * w + j];
 			}
 			pm[i] = v;
 		}
 		g->map = pm;
 	}
 	state->active = g;
-	state->hp = buff[6];
+	state->hp = buff[29];
 	TileMap tm(MAP_WIDTH * MAP_HEIGHT);
 	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
-		tm[i] = buff[7+i];
+		tm[i] = buff[30+i];
 	}
 	state->tileMap = tm;
 	return state;
