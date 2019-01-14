@@ -11,8 +11,7 @@ class Game {
 		Game();
 		~Game();
 
-		std::vector<uint8_t> tileMap;
-		std::shared_ptr<GamePiece> active;
+		std::shared_ptr<GameState> state;
 		GameObjs objects;
 	private:
 		bool rightPriority;
@@ -20,7 +19,10 @@ class Game {
 		int gravityTimer, moveTimer, lockTimer;
 		bool rngInit;
 		int lockTimerMax;
+		int playerHp;
+		int maxPlayerHp;
 
+		void onOverflow();
 		void moveActive();
 		void rotateActive(bool cc);
 		void placeActive(bool force);

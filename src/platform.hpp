@@ -1,16 +1,16 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
-#include "SDL.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include "trl.hpp"
 #include "piece.hpp"
 
 class Platform {
 	public:
 		bool init(int width, int height);
-		void update(uint32_t time, std::vector<uint8_t> tileMap,
-					GameObjs objects, std::shared_ptr<GamePiece> active,
-					std::shared_ptr<GameState> p2state);
+		void update(uint32_t time, std::shared_ptr<GameState> p1state,
+					GameObjs objects, std::shared_ptr<GameState> p2state);
 		void (*onInputEvent)(InputEvent);
 	private:
 		SDL_Window* window;
@@ -21,12 +21,12 @@ class Platform {
 		int p2Offset;
 		int p1Offset;
 		int yOffset = 2;
-		std::shared_ptr<GamePiece> oldActive;
-		std::vector<uint8_t> oldTileMap;
+		std::shared_ptr<GameState> oldState;
 
 		void drawTileMap(std::vector<uint8_t> tileMap, bool p1);
 		void drawObjs(GameObjs objects);
 		void drawActive(std::shared_ptr<GamePiece> active, bool p1);
+		void drawHealthBar(uint8_t hp, bool p1);
 		void handleEvents();
 };
 

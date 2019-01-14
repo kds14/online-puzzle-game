@@ -7,19 +7,20 @@ Game game;
 
 Game::Game() {
 	objects = std::vector<std::shared_ptr<GameObject>>();
-	active = NULL;
 	moveUp = 0, moveDown = 0, moveRight = 0, moveUp = 0;
 	gravityTimer = 0, moveTimer = 0, lockTimer = -1;
 	lockTimerMax = 50;
 	rngInit = 0;
 	rightPriority = false;
-	tileMap = std::vector<uint8_t>(200);
+	state = std::make_shared<GameState>();
+	maxPlayerHp = 100;
+	playerHp = maxPlayerHp;
 }
 
 void Game::printMap() {
 	for (int i = 0; i < MAP_HEIGHT; ++i) {
 		for (int j = 0; j < MAP_WIDTH; ++j) {
-			printf("%02X ", tileMap[i * MAP_WIDTH + j]);
+			printf("%02X ", state->tileMap[i * MAP_WIDTH + j]);
 		}
 		puts("");
 	}
@@ -62,15 +63,15 @@ void Game::handleInput(InputEvent e) {
 
 bool Game::checkCollision() {
 	int x, y;
-	for (std::size_t i = 0; i < active->map.size(); ++i) {
-		for (std::size_t j = 0; j < active->map[i].size(); ++j) {
-			if (!active->map[i][j])
+	for (std::size_t i = 0; i < state->active->map.size(); ++i) {
+		for (std::size_t j = 0; j < state->active->map[i].size(); ++j) {
+			if (!state->active->map[i][j])
 				continue;
-			x = active->x + j;
-			y = active->y + i;
+			x = state->active->x + j;
+			y = state->active->y + i;
 			if (y < 0)
 				break;
-			if (x < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT || tileMap[y * MAP_WIDTH + x]) {
+			if (x < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT || state->tileMap[y * MAP_WIDTH + x]) {
 				return true;
 			}
 		}
@@ -83,7 +84,7 @@ void Game::checkLineClear() {
 	for (int i = 0; i < MAP_HEIGHT; ++i) {
 		bool full = true;
 		for (int j = 0; j < MAP_WIDTH; ++j) {
-			if (!tileMap[i * MAP_WIDTH + j]) {
+			if (!state->tileMap[i * MAP_WIDTH + j]) {
 				full = false;
 				break;
 			}
@@ -91,9 +92,9 @@ void Game::checkLineClear() {
 		if (full) {
 			uint8_t tmp[MAP_HEIGHT * MAP_WIDTH];
 			idx = i * MAP_WIDTH;
-			memcpy(&tmp, &tileMap[0], idx);
-			memcpy(&tileMap[MAP_WIDTH], &tmp, idx);
-			memset(&tileMap[0], 0, MAP_WIDTH);
+			memcpy(&tmp, &state->tileMap[0], idx);
+			memcpy(&state->tileMap[MAP_WIDTH], &tmp, idx);
+			memset(&state->tileMap[0], 0, MAP_WIDTH);
 			game_flags |= LINE_CLEAR;
 		}
 	}
@@ -108,17 +109,17 @@ void Game::placeActive(bool force) {
 		lockTimer = -1;
 	}
 	int x, y;
-	for (std::size_t i = 0; i < active->map.size(); ++i) {
-		for (std::size_t j = 0; j < active->map[i].size(); ++j) {
-			if (!active->map[i][j])
+	for (std::size_t i = 0; i < state->active->map.size(); ++i) {
+		for (std::size_t j = 0; j < state->active->map[i].size(); ++j) {
+			if (!state->active->map[i][j])
 				continue;
-			x = active->x + j;
-			y = active->y + i;
-			tileMap[y * MAP_WIDTH + x] = 1;
+			x = state->active->x + j;
+			y = state->active->y + i;
+			state->tileMap[y * MAP_WIDTH + x] = 1;
 		}
 	}
 	checkLineClear();
-	active = NULL;
+	state->active = NULL;
 }
 
 void Game::moveActive() {
@@ -127,34 +128,34 @@ void Game::moveActive() {
 	}
 
 	// horizontal movement logic
-	int oldx = active->x;
-	int oldy = active->y;
+	int oldx = state->active->x;
+	int oldy = state->active->y;
 	if (rightPriority && moveRight) {
 		if (moveRight++ == 1 || moveRight > 14) {
-			active->x++;
+			state->active->x++;
 		}
 		if (moveLeft)
 			moveLeft = 1;
 	} else if (!rightPriority && moveLeft) {
 		if (moveLeft++ == 1 || moveLeft > 14) {
-			active->x--;
+			state->active->x--;
 		}
 		if (moveRight)
 			moveRight = 1;
 	}
 	if (checkCollision())
-		active->x = oldx;
+		state->active->x = oldx;
 
 	// down arrow movement logic
-	oldx = active->x;
+	oldx = state->active->x;
 	if (moveDown) {
 		if (++moveTimer == 2) {
-			active->y += moveDown;
+			state->active->y += moveDown;
 			moveTimer = 0;
 			if (checkCollision()) {
-				active->y = oldy;
+				state->active->y = oldy;
 				placeActive(false);
-				if (!active)
+				if (!state->active)
 					return;
 			}
 		}
@@ -163,31 +164,31 @@ void Game::moveActive() {
 	}
 	// if theres no lock timer, do gravity logic
 	if (lockTimer == -1) {
-		oldy = active->y;
+		oldy = state->active->y;
 		if (++gravityTimer == 1) {
-			active->y++;
+			state->active->y++;
 			gravityTimer = 0;
 		}
 		if (checkCollision()) {
-			active->y = oldy;
+			state->active->y = oldy;
 			placeActive(false);
 		} 
 	}
 	// if theres still a piece, do lock timer logic
-	if (active) {
-		active->y++;
+	if (state->active) {
+		state->active->y++;
 		bool col = checkCollision();
-		if (lockTimer > 0 && !col) {
+		if (lockTimer >= 0 && !col) {
 			lockTimer = -1;
 		} else if (lockTimer == 0 && col) {
-			active->y--;
+			state->active->y--;
 			placeActive(false);
 			lockTimer = -1;
 			return;
 		} else if (col && lockTimer == -1) {
 			lockTimer = lockTimerMax;
 		}
-		active->y--;
+		state->active->y--;
 	} else {
 		lockTimer = -1;
 	}
@@ -212,38 +213,48 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 }
 
 void Game::rotateActive(bool cc) {
-	if (!active || !active->rot)
+	if (!state->active || !state->active->rot)
 		return;
-	PieceMap m = PieceMap(active->map);
-	int h = active->map.size();
-	int w = active->map[0].size();
+	PieceMap m = PieceMap(state->active->map);
+	int h = state->active->map.size();
+	int w = state->active->map[0].size();
 	for (int i = 0; i < h; ++i) {
 		for (int j = 0; j < w; ++j) {
 			if (cc)
-				m[h-j-1][i] = active->map[i][j];
+				m[h-j-1][i] = state->active->map[i][j];
 			else
-				m[j][h-i-1] = active->map[i][j];
+				m[j][h-i-1] = state->active->map[i][j];
 
 		}
 	}
-	PieceMap old = active->map;
-	active->map = m;
+	PieceMap old = state->active->map;
+	state->active->map = m;
 	if (checkCollision())
-		active->map = old;
+		state->active->map = old;
 }
 
+void Game::onOverflow() {
+	playerHp -= 50;
+	if (playerHp <= 0) {
+		game_flags |= LOSE_FLAG;
+	} else {
+		game_flags |= LINE_CLEAR;
+	}
+	state->tileMap = TileMap(200);
+}
 
 void Game::update(uint32_t time) {
 	if (game_flags & LINE_CLEAR)
 		return;
-	if (!active) {
-		active = nextPiece();
+	if (!state->active) {
+		state->active = nextPiece();
 		if (checkCollision()) {
-			game_flags |= LOSE_FLAG;
 			placeActive(true);
+			onOverflow();
 		}
 	}
-	if (active) {
+	if (state->active) {
 		moveActive();
 	}
+	state->hp = (uint8_t)(((double)playerHp / maxPlayerHp)*255);
 }

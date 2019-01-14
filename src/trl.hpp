@@ -40,8 +40,12 @@ typedef std::shared_ptr<GamePiece> GamePiecePtr;
 struct GameState {
 	GamePiecePtr active;
 	TileMap tileMap;
+	uint8_t hp;
+	GameState() {
+		active = NULL;
+		tileMap = TileMap(200);
+		hp = 0;
+	}
 };
-
-
 
 #endif

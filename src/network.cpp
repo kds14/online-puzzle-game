@@ -47,8 +47,9 @@ static uint8_t* serialize(std::shared_ptr<GameState> state) {
 	} else {
 		memset(buff, 0xFF, 6); // All 0xFF means NULL
 	}
+	buff[6] = state->hp;
 	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
-		buff[6+i] = state->tileMap[i];
+		buff[7+i] = state->tileMap[i];
 	}
 	return buff;
 }
@@ -78,9 +79,10 @@ static std::shared_ptr<GameState> deserialize(uint8_t* buff) {
 		g->map = pm;
 	}
 	state->active = g;
+	state->hp = buff[6];
 	TileMap tm(MAP_WIDTH * MAP_HEIGHT);
 	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
-		tm[i] = buff[6+i];
+		tm[i] = buff[7+i];
 	}
 	state->tileMap = tm;
 	return state;

@@ -1,6 +1,7 @@
 #include "platform.hpp"
 
 Platform platform;
+//SDL_Texture *tex;
 
 void Platform::drawTileMap(std::vector<uint8_t> tileMap, bool p1) {
 	// draw blocks
@@ -51,6 +52,7 @@ void Platform::drawActive(std::shared_ptr<GamePiece> active, bool p1) {
 	SDL_RenderFillRects(renderer, &rects[0], count);
 }
 
+
 bool Platform::init(int width, int height) {
 	// change layout if 2p
 	if (game_flags & TWOP_FLAG) {
@@ -76,6 +78,19 @@ bool Platform::init(int width, int height) {
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);
 	SDL_RenderPresent(renderer);
+
+	/*if (IMG_Init(IMG_INIT_PNG) < 0) {
+		fprintf(stderr, "SDL_image failed to initialize: %s\n", IMG_GetError());
+		return false;
+	}
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+	SDL_Surface *surf = IMG_Load("/home/kds/Pictures/junkai_smol.png");
+	if (!surf) {
+		printf("Failed to load img: %s\n", IMG_GetError());
+	}
+	tex = SDL_CreateTextureFromSurface(renderer, surf);
+	SDL_FreeSurface(surf);*/
+
 	return true;
 }
 
@@ -119,29 +134,57 @@ void Platform::handleEvents() {
 	}
 }
 
-void Platform::update(uint32_t time, std::vector<uint8_t> tileMap, GameObjs objects, std::shared_ptr<GamePiece> active, std::shared_ptr<GameState> p2state) {
+void Platform::drawHealthBar(uint8_t hp, bool p1) {
+	SDL_Rect bar;
+	int offset = p1 ? p1Offset : p2Offset;
+	bar.x = offset * TILE_SIZE;
+	bar.y = (yOffset + MAP_HEIGHT + 0.5) * TILE_SIZE;
+	bar.h = TILE_SIZE;
+	bar.w = MAP_WIDTH * TILE_SIZE;
+
+	SDL_Rect health;
+	health.x = bar.x;
+	health.y = bar.y;
+	health.h = bar.h;
+	health.w = (hp/255.0) * MAP_WIDTH * TILE_SIZE;
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_RenderFillRect(renderer, &bar);
+	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+	SDL_RenderFillRect(renderer, &health);
+}
+
+void Platform::update(uint32_t time, std::shared_ptr<GameState> p1state, GameObjs objects, std::shared_ptr<GameState> p2state) {
 	// draw and clear renderer
 	drawObjs(objects);
-	if (active)
-		drawActive(active, true);
-	drawTileMap(tileMap, true);
+	if (p1state->active)
+		drawActive(p1state->active, true);
+	drawHealthBar(p1state->hp, true);
+	drawTileMap(p1state->tileMap, true);
 	if (game_flags & TWOP_FLAG) {
 		if (p2state) {
-			oldActive = NULL;
-			oldTileMap = std::vector<uint8_t>();
+			oldState = std::make_shared<GameState>();
 			if (p2state->active) {
 				drawActive(p2state->active, false);
-				oldActive = active;
+				oldState->active = p2state->active;
 			}
-			oldTileMap = p2state->tileMap;
+			oldState->tileMap = p2state->tileMap;
 			drawTileMap(p2state->tileMap, false);
-		} else {
-			if (oldActive)
-				drawActive(oldActive, false);
-			if (oldTileMap.size() > 0)
-				drawTileMap(oldTileMap, false);
+			drawHealthBar(p2state->hp, false);
+		} else if (oldState) {
+			if (oldState->active)
+				drawActive(oldState->active, false);
+			if (oldState->tileMap.size() > 0)
+				drawTileMap(oldState->tileMap, false);
+			drawHealthBar(oldState->hp, false);
 		}
 	}
+	/*SDL_Rect target;
+	target.x = (MAP_WIDTH + 4) * TILE_SIZE;
+	target.y = TILE_SIZE;
+	target.w = (MAP_WIDTH / 2) * TILE_SIZE;
+	target.h = (1200.0/850)*((MAP_WIDTH / 2) * TILE_SIZE);
+	SDL_RenderCopy(renderer, tex, NULL, &target);
+	*/
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);

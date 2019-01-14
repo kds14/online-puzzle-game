@@ -7,7 +7,7 @@ all: $(TARGET)
 
 $(TARGET):$(SOURCES)
 	mkdir -p build
-	$(CC) $(FLAGS) -o $@ $^ `sdl2-config --cflags --libs`
+	$(CC) $(FLAGS) -o $@ $^  `sdl2-config --cflags --libs` -lSDL2_image
 
 clean:
 	rm -rf ./build

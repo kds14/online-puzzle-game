@@ -65,13 +65,10 @@ int main(int argc, char** argv) {
 		game.update(time);
 		std::shared_ptr<GameState> p2state = NULL;
 		if (game_flags & TWOP_FLAG) {
-			auto ptr = std::make_shared<GameState>();
-			ptr->active = game.active;
-			ptr->tileMap = game.tileMap;
-			network.send_state(ptr);
+			network.send_state(game.state);
 			p2state = network.rec();
 		}
-		platform.update(time, game.tileMap, game.objects, game.active, p2state);
+		platform.update(time, game.state, game.objects, p2state);
 		time++;
 		if (game_flags & LOSE_FLAG)
 			exit(0);
