@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
 	platform.onInputEvent = handleInput;
 	uint32_t time = 0;
 	int line_timer = 0;
+	game.init(std::unique_ptr<Boss>(new Witch(100)));
 	while(1) {
 		if (game_flags & LINE_CLEAR && ++line_timer == 40) {
 			game_flags &= ~LINE_CLEAR;

@@ -5,6 +5,8 @@
 #include <vector>
 #include <algorithm>
 #include <string.h>
+#include <list>
+#include <stdlib.h>
 
 #include "piece.hpp"
 
@@ -41,11 +43,20 @@ struct GameState {
 	GamePiecePtr active;
 	TileMap tileMap;
 	uint8_t hp;
+	std::list<PieceMap> next;
 	GameState() {
 		active = NULL;
 		tileMap = TileMap(200);
 		hp = 0;
+		next = std::list<PieceMap>();
 	}
+};
+
+struct ClearData {
+	int r;
+	int g;
+	int b;
+	double multiplier;
 };
 
 #endif

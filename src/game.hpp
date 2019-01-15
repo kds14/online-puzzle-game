@@ -1,21 +1,24 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <list>
-
 #include "trl.hpp"
 #include "piece.hpp"
+#include "boss.hpp"
 
 class Game {
 	public:
+		void init(std::unique_ptr<Boss> boss);
 		void update(uint32_t time);
 		void handleInput(InputEvent e);
 		Game();
 		~Game();
 
 		std::shared_ptr<GameState> state;
+		std::unique_ptr<ClearData> clearData;
+
 		GameObjs objects;
 	private:
+		std::unique_ptr<Boss> boss;
 		bool rightPriority;
 		int moveUp, moveDown, moveRight, moveLeft;
 		int gravityTimer, moveTimer, lockTimer;
@@ -23,6 +26,7 @@ class Game {
 		int lockTimerMax;
 		int playerHp, maxPlayerHp;
 		std::list<int> toClear;
+		double multiplier;
 
 		void onOverflow();
 		void moveActive();

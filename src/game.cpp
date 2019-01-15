@@ -1,5 +1,4 @@
 #include <time.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 #include "game.hpp"
@@ -14,15 +13,9 @@ Game::Game() {
 	rngInit = 0;
 	rightPriority = false;
 	state = std::make_shared<GameState>();
-	/*state->tileMap[(MAP_HEIGHT - 1) * MAP_WIDTH + 3] = 3;
-	state->tileMap[(MAP_HEIGHT - 2) * MAP_WIDTH + 3] = 4;
-	state->tileMap[(MAP_HEIGHT - 4) * MAP_WIDTH + 3] = 2;
-	state->tileMap[(MAP_HEIGHT - 4) * MAP_WIDTH + 2] = 2;
-	state->tileMap[(MAP_HEIGHT - 3) * MAP_WIDTH + 2] = 3;
-	state->tileMap[(MAP_HEIGHT - 2) * MAP_WIDTH + 2] = 3;
-	state->tileMap[(MAP_HEIGHT - 1) * MAP_WIDTH + 2] = 3;*/
 	maxPlayerHp = 100;
 	playerHp = maxPlayerHp;
+	multiplier = 1.0L;
 }
 
 void Game::printMap() {
@@ -72,7 +65,7 @@ void Game::handleInput(InputEvent e) {
 bool Game::checkTileCollision(int idx) {
 	int x = idx % MAP_WIDTH;
 	int y = (idx / MAP_WIDTH);
-	if (x < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT || state->tileMap[idx] > 1)
+	if (x < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT || state->tileMap[idx] > CLEAR_PIECE)
 		return true;
 	return false;
 }
@@ -81,7 +74,7 @@ bool Game::checkCollision() {
 	int x, y;
 	for (std::size_t i = 0; i < state->active->map.size(); ++i) {
 		for (std::size_t j = 0; j < state->active->map[i].size(); ++j) {
-			if (state->active->map[i][j] <= 1)
+			if (state->active->map[i][j] <= CLEAR_PIECE)
 				continue;
 			x = state->active->x + j;
 			y = state->active->y + i;
@@ -113,12 +106,13 @@ std::vector<int> Game::getNeighbors(int idx) {
 }
 
 void Game::absCheckLineClear() {
+	auto cd = std::unique_ptr<ClearData>(new ClearData());
 	std::list<int> cleared;
 	std::vector<bool> vis(MAP_HEIGHT * MAP_WIDTH);
 	for (int i = 0; i < MAP_HEIGHT; ++i) {
 		for (int j = 0; j < MAP_WIDTH; ++j) {
 			int idx = i * MAP_WIDTH + j;
-			if (state->tileMap[idx] <= 1 || vis[idx])
+			if (state->tileMap[idx] <= JUNK_PIECE || vis[idx])
 				continue;
 			std::list<int> poss;
 			std::list<int> match;
@@ -132,14 +126,27 @@ void Game::absCheckLineClear() {
 				auto n = getNeighbors(f);
 				for (std::size_t k = 0; k < n.size(); ++k) {
 					auto nk = state->tileMap[n[k]];
-					if (fc == nk && !vis[n[k]] && nk > 1) {
+					if (fc == nk && !vis[n[k]] && nk > JUNK_PIECE) {
 						vis[n[k]] = true;
 						poss.push_back(n[k]);
 						match.push_back(n[k]);
 					}
 				}
 			}
+			auto msz = match.size();
 			if (match.size() >= 4) {
+				printf("K: %d\n", state->tileMap[match.front()]);
+				switch(state->tileMap[match.front()]) {
+					case RED_PIECE:
+						cd->r += msz;
+						break;
+					case GREEN_PIECE:
+						cd->g += msz;
+						break;
+					case BLUE_PIECE:
+						cd->b += msz;
+						break;
+				}
 				cleared.splice(cleared.end(), match);
 			}
 		}
@@ -150,7 +157,10 @@ void Game::absCheckLineClear() {
 			state->tileMap[i] = 1;
 		}
 		toClear = cleared;
+		cd->multiplier = multiplier;
+		multiplier += 0.1;
 	}
+	clearData = std::move(cd);
 }
 
 void Game::placeActive(bool force) {
@@ -260,22 +270,24 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 		srand(time(NULL) + getpid());
 	}
 	auto ptr = std::make_shared<GamePiece>();
-	ptr->x = 3;
-	ptr->y = -1;
-	ptr->rot = 1;
-	int idx = rand() % 3;
-	if (!idx)
-		ptr->y += 1;
-	/*ptr->map = PieceMap(pieces[0]);
-	ptr->map[0][0] = 3;
-	ptr->map[0][1] = 3;
-	ptr->map[1][1] = 3;*/
-	ptr->map = PieceMap(pieces[idx]);
-	for (auto &row : ptr->map) {
-		for (auto &item : row) {
-			item *= (rand() % 3) + 2;
+	if (state->next.size() > 0) {
+		printf("ATTACK!\n");
+		ptr->map = state->next.front();
+		state->next.pop_front();
+	} else {
+		int idx = rand() % 3;
+		if (!idx)
+			ptr->y += 1;
+		ptr->map = PieceMap(pieces[idx]);
+		for (auto &row : ptr->map) {
+			for (auto &item : row) {
+				item *= (rand() % 3) + 3;
+			}
 		}
 	}
+	ptr->x = 2;
+	ptr->y = ptr->map.size() == 2 ? 0 : -1;
+	ptr->rot = 1;
 	return ptr;
 }
 
@@ -320,11 +332,15 @@ void Game::applyGravity(int idx) {
 	}
 }
 
+void Game::init(std::unique_ptr<Boss> boss) {
+	this->boss = std::move(boss);
+}
+
 void Game::applyGravityByGroup() {
 	std::vector<bool> vis(MAP_HEIGHT * MAP_WIDTH);
 	std::vector<std::list<int>> groups;
 	for (int i = MAP_HEIGHT * MAP_WIDTH - 1; i >= 0; --i) {
-		if (vis[i] || state->tileMap[i] <= 1)
+		if (vis[i] || state->tileMap[i] <= JUNK_PIECE)
 			continue;
 		std::list<int> match;
 		std::list<int> poss;
@@ -353,7 +369,7 @@ void Game::applyGravityByGroup() {
 	for (auto &group: groups) {
 		std::vector<int> bot(group.size());
 		std::copy_if (group.begin(), group.end(), bot.begin(),
-		[this](int idx){return !checkTileCollision(idx + MAP_WIDTH);});
+				[this](int idx){return !checkTileCollision(idx + MAP_WIDTH);});
 		while (true) {
 			bool col = false;
 			for (auto &b: bot) {
@@ -378,8 +394,11 @@ void Game::applyGravityByGroup() {
 }
 
 void Game::update(uint32_t time) {
+	boss->update(state, std::move(clearData));
+	clearData = nullptr;
 	if (game_flags & LINE_CLEAR)
 		return;
+	std::unique_ptr<ClearData> d(nullptr);
 	if (toClear.size() > 0) {
 		toClear.sort([](int a, int b) {return a > b;});
 		for (auto &i: toClear) {
@@ -390,6 +409,7 @@ void Game::update(uint32_t time) {
 		absCheckLineClear();
 		return;
 	}
+	multiplier = 1.0L;
 	if (!state->active) {
 		state->active = nextPiece();
 		if (checkCollision()) {
