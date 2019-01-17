@@ -1,5 +1,10 @@
 #include <time.h>
+
+#ifdef __linux__
 #include <unistd.h>
+#elif _WIN32
+#include <windows.h>
+#endif
 
 #include "game.hpp"
 
@@ -266,7 +271,14 @@ void Game::moveActive() {
 std::shared_ptr<GamePiece> Game::nextPiece() {
 	if (!rngInit) {
 		rngInit = 1;
-		srand(time(NULL) + getpid());
+		int pid;
+#ifdef __linux__
+		pid = getpid();
+#elif _WIN32
+		pid = GetCurrentProcessId();
+#endif
+
+		srand(time(NULL) + pid);
 	}
 	auto ptr = std::make_shared<GamePiece>();
 	if (state->next.size() > 0) {

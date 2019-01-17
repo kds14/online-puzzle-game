@@ -1,13 +1,16 @@
-TARGET=./build/trl
+OUTDIR=./build/
+TARGET=./build/trl.exe
 SOURCES=./src/*.cpp
-CC=g++
-FLAGS=-std=c++17 -g -Wall -Werror
+CC=cl
+FLAGS=/W4 /EHsc
+SDLLIB=C:\SDL\lib\win32
+SDLINC=C:\SDL\include
 
 all: $(TARGET)
 
 $(TARGET):$(SOURCES)
 	mkdir -p build
-	$(CC) $(FLAGS) -o $@ $^  `sdl2-config --cflags --libs` -lSDL2_image
+	$(CC) $(FLAGS) /Fo:$(OUTDIR) /Fe:$@ $**  /I $(SDLINC) /link /LIBPATH:$(SDLLIB) SDL2.lib SDL2main.lib /SUBSYSTEM:CONSOLE
 
 clean:
-	rm -rf ./build
+	rm -r ./build

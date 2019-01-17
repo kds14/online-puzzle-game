@@ -1,8 +1,12 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+#ifdef __linux__
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_image.h"
+#elif _WIN32
+#include "SDL.h"
+#endif
 
 #include "trl.hpp"
 #include "piece.hpp"

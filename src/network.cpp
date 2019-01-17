@@ -1,9 +1,3 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-
 #include "network.hpp"
 
 static const int BACKLOG = 500;
@@ -13,15 +7,6 @@ const std::string HOST_ARG = "-h";
 const std::string CLIENT_ARG = "-c";
 
 Network network;
-
-Network::~Network() {
-	if (sfd >= 0) {
-		close(sfd);
-	}
-	if (lfd >= 0) {
-		close(lfd);
-	}
-}
 
 static uint8_t* serialize(std::shared_ptr<GameState> state) {
 	uint8_t *buff = new uint8_t[NET_BUFF_SIZE];
@@ -84,6 +69,29 @@ static std::shared_ptr<GameState> deserialize(uint8_t* buff) {
 	return state;
 }
 
+static int closeSocket_mp(int fd) {
+	int res;
+#ifdef _WIN32
+	res = closesocket(fd);
+	WSACleanup();
+#elif __linux__
+	res = close(fd);
+#endif
+	return res;
+}
+
+static char* strerror_mp(int errnum) {
+	char* res;
+#ifdef _WIN32
+	memset(ERRMSG_BUFF, 0, ERRMSG_LEN);
+	strerror_s(ERRMSG_BUFF, ERRMSG_LEN, errnum);
+	res = ERRMSG_BUFF;
+#elif __linux__
+	res = strerror(errnum);
+#endif
+	return res;
+}
+
 std::shared_ptr<GameState> Network::rec() {
 	std::shared_ptr<GameState> ptr = nullptr;
 
@@ -102,7 +110,7 @@ std::shared_ptr<GameState> Network::rec() {
 		}
 		if (sfd >= 0) {
 			uint8_t *buff = new uint8_t[NET_BUFF_SIZE];
-			int res = read(sfd, buff, NET_BUFF_SIZE);
+			int res = recv(sfd, (char*)buff, NET_BUFF_SIZE, 0);
 			if (res > 0) {
 				ptr = deserialize(buff);
 				dmg = ptr->recDmg;
@@ -120,13 +128,21 @@ std::shared_ptr<GameState> Network::rec() {
 void Network::send_state(std::shared_ptr<GameState> state) {
 	if (sfd >= 0) {
 		uint8_t *buff = serialize(state);
-		send(sfd, buff, NET_BUFF_SIZE, 0);
+		send(sfd, (char*)buff, NET_BUFF_SIZE, 0);
 		delete buff;
 	}
 }
 
 int Network::conn(std::string hostname, std::string port) {
 	struct addrinfo hints, *res, *rptr;
+#ifdef _WIN32
+	WSADATA wsaData;
+	int wsares = WSAStartup(MAKEWORD(2,2), &wsaData);
+	if (wsares != 0) {
+		fprintf(stderr, "WSAStartup failed with error: %d\n", wsares);
+		return -1;
+	}
+#endif
 	while (sfd < 0) {
 		memset(&hints, 0, sizeof(struct addrinfo));
 
@@ -153,7 +169,7 @@ int Network::conn(std::string hostname, std::string port) {
 				break;
 			}
 
-			close(fd);
+			closeSocket_mp(fd);
 		}
 
 		freeaddrinfo(res);
@@ -162,13 +178,25 @@ int Network::conn(std::string hostname, std::string port) {
 }
 
 int Network::host(std::string port) {
+#ifdef _WIN32
+	WSADATA wsaData;
+	int wsares = WSAStartup(MAKEWORD(2,2), &wsaData);
+	if (wsares != 0) {
+		fprintf(stderr, "WSAStartup failed with error: %d\n", wsares);
+		return -1;
+	}
+#endif
+
 	lfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (lfd == -1) {
-		fprintf(stderr, "Failed to create server socket %s\n", strerror(errno));
+		fprintf(stderr, "Failed to create server socket %s\n", strerror_mp(errno));
+#ifdef _WIN32
+		WSACleanup();
+#endif
 		return -1;
 	}
 
-	int so_reuseaddr = 1;
+	char so_reuseaddr = 1;
 	setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &so_reuseaddr, sizeof(so_reuseaddr));
 
 	struct sockaddr_in saddr;
@@ -181,19 +209,21 @@ int Network::host(std::string port) {
 	saddr.sin_port = htons(stoi(port));
 
 	if (bind(lfd, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in)) == -1) {
-		fprintf(stderr, "Failed to bind: %s\n", strerror(errno));
+		fprintf(stderr, "Failed to bind: %s\n", strerror_mp(errno));
+		closeSocket_mp(lfd);
 		return -1;
 	}
 
 	if (listen(lfd, BACKLOG) == -1) {
-		fprintf(stderr, "Failed to listen: %s\n", strerror(errno));
+		fprintf(stderr, "Failed to listen: %s\n", strerror_mp(errno));
 		return -1;
 	}
 
 	socklen_t caddr_len = sizeof(struct sockaddr_in);
 	sfd = accept(lfd, (struct sockaddr *)&caddr, &caddr_len);
 	if (sfd == -1) {
-		fprintf(stderr, "Failed to accept connection: %s\n", strerror(errno));
+		fprintf(stderr, "Failed to accept connection: %s\n", strerror_mp(errno));
+		closeSocket_mp(lfd);
 		return -1;
 	}
 	return 0;

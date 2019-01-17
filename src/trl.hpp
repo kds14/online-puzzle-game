@@ -1,12 +1,15 @@
 #ifndef TRL_H
 #define TRL_H
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <memory>
 #include <vector>
 #include <algorithm>
-#include <string.h>
+#include <string>
 #include <list>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "piece.hpp"
 
