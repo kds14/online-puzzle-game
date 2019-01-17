@@ -7,7 +7,7 @@
 
 class Game {
 	public:
-		void init(std::unique_ptr<Boss> boss);
+		void init(std::shared_ptr<Boss> boss);
 		void update(uint32_t time);
 		void handleInput(InputEvent e);
 		Game();
@@ -18,7 +18,7 @@ class Game {
 
 		GameObjs objects;
 	private:
-		std::unique_ptr<Boss> boss;
+		std::shared_ptr<Boss> boss;
 		bool rightPriority;
 		int moveUp, moveDown, moveRight, moveLeft;
 		int gravityTimer, moveTimer, lockTimer;

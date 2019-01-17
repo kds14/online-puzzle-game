@@ -57,8 +57,13 @@ int main(int argc, char** argv) {
 	platform.onInputEvent = handleInput;
 	uint32_t time = 0;
 	int line_timer = 0;
-	game.init(std::unique_ptr<Boss>(new Witch(100)));
+	int bossHp = 100;
+	if (game_flags & TWOP_FLAG)
+		bossHp *= 2;
+	auto boss = std::shared_ptr<Boss>(new Witch(bossHp));
+	game.init(boss);
 	while(1) {
+		game.state->recDmg = 0;
 		if (game_flags & LINE_CLEAR && ++line_timer == 40) {
 			game_flags &= ~LINE_CLEAR;
 			line_timer = 0;
@@ -68,8 +73,10 @@ int main(int argc, char** argv) {
 		if (game_flags & TWOP_FLAG) {
 			network.send_state(game.state);
 			p2state = network.rec();
+			if (p2state)
+				boss->dealDmg(p2state->recDmg);
 		}
-		platform.update(time, game.state, game.objects, p2state);
+		platform.update(time, game.state, game.objects, p2state, boss);
 		time++;
 		if (game_flags & LOSE_FLAG)
 			exit(0);

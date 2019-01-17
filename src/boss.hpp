@@ -8,10 +8,15 @@ class Boss {
 	public:
 		Boss(int hp) {
 			this->hp = hp; 
+			this->maxhp = hp; 
+		}
+		void dealDmg(int dmg) {
+			hp -= dmg;
 		}
 		virtual void update(std::shared_ptr<GameState> state,
 							std::unique_ptr<ClearData> clearData) = 0;
 		int hp;
+		int maxhp;
 };
 
 class Witch : public Boss {
@@ -22,20 +27,25 @@ class Witch : public Boss {
 			if (clearData) {
 				int sum = clearData->r + clearData->g + clearData->b;
 				int dmg = sum * clearData->multiplier;
-				printf("DMG: %d (%d %f)\n", dmg, sum, clearData->multiplier);
 				hp -= dmg;
+				state->recDmg = dmg;
 			}
 			if (hp <= 0) {
 				printf("The witch has died!\n");
 				exit(0);
 			}
 			if (time++ >= timer) {
-				state->next.push_back(witchPiece);
+				if (atkflag)
+					state->next.push_back(witchPiece);
+				else
+					state->playerRecDmg = 5;
+				atkflag = !atkflag;
 				time = 0;
 			}
 		}
 	private:
-		int timer = 1200;
+		bool atkflag = false;
+		int timer = 600;
 		int time = 0;
 };
 

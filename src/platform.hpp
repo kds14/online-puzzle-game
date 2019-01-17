@@ -3,14 +3,17 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+
 #include "trl.hpp"
 #include "piece.hpp"
+#include "boss.hpp"
 
 class Platform {
 	public:
 		bool init(int width, int height);
 		void update(uint32_t time, std::shared_ptr<GameState> p1state,
-					GameObjs objects, std::shared_ptr<GameState> p2state);
+					GameObjs objects, std::shared_ptr<GameState> p2state,
+					std::shared_ptr<Boss> boss);
 		void (*onInputEvent)(InputEvent);
 	private:
 		SDL_Window* window;
@@ -28,6 +31,7 @@ class Platform {
 		void drawActive(std::shared_ptr<GamePiece> active, bool p1);
 		void drawHealthBar(uint8_t hp, bool p1);
 		void handleEvents();
+		void drawBoss(std::shared_ptr<Boss> boss);
 };
 
 extern Platform platform;

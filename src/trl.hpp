@@ -44,6 +44,9 @@ struct GameState {
 	TileMap tileMap;
 	uint8_t hp;
 	std::list<PieceMap> next;
+	int recDmg;
+	int playerRecDmg;
+
 	GameState() {
 		active = NULL;
 		tileMap = TileMap(200);

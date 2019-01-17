@@ -7,7 +7,7 @@
 #include "network.hpp"
 
 static const int BACKLOG = 500;
-static const int NET_BUFF_SIZE = MAP_WIDTH * MAP_HEIGHT + 30;
+static const int NET_BUFF_SIZE = MAP_WIDTH * MAP_HEIGHT + 34;
 
 const std::string HOST_ARG = "-h";
 const std::string CLIENT_ARG = "-c";
@@ -43,8 +43,10 @@ static uint8_t* serialize(std::shared_ptr<GameState> state) {
 		memset(buff, 0xFF, 29); // All 0xFF means NULL
 	}
 	buff[29] = state->hp;
+	uint32_t tmp = htonl(state->recDmg);
+	memcpy(&buff[30], &tmp, 4);
 	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
-		buff[30+i] = state->tileMap[i];
+		buff[34+i] = state->tileMap[i];
 	}
 	return buff;
 }
@@ -71,35 +73,47 @@ static std::shared_ptr<GameState> deserialize(uint8_t* buff) {
 	}
 	state->active = g;
 	state->hp = buff[29];
+	uint32_t tmp;
+	memcpy(&tmp, &buff[30], 4);
+	state->recDmg = ntohl(tmp);
 	TileMap tm(MAP_WIDTH * MAP_HEIGHT);
 	for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; ++i) {
-		tm[i] = buff[30+i];
+		tm[i] = buff[34+i];
 	}
 	state->tileMap = tm;
 	return state;
 }
 
 std::shared_ptr<GameState> Network::rec() {
-	std::shared_ptr<GameState> ptr = NULL;
+	std::shared_ptr<GameState> ptr = nullptr;
 
-	fd_set rfds;
-	struct timeval tv;
-	FD_ZERO(&rfds);
-	FD_SET(sfd, &rfds);
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
+	int dmg = 0;
+	for (int i = 0; i < misses + 1; ++i) {
+		fd_set rfds;
+		struct timeval tv;
+		FD_ZERO(&rfds);
+		FD_SET(sfd, &rfds);
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
 
-	if (select(sfd + 1, &rfds, NULL, NULL, &tv) <= 0) {
-		return ptr;
-	}
-	if (sfd >= 0) {
-		uint8_t *buff = new uint8_t[NET_BUFF_SIZE];
-		int res = read(sfd, buff, NET_BUFF_SIZE);
-		if (res > 0) {
-			ptr = deserialize(buff);
+		if (select(sfd + 1, &rfds, NULL, NULL, &tv) <= 0) {
+			misses += 1;
+			break;
 		}
-		delete buff;
+		if (sfd >= 0) {
+			uint8_t *buff = new uint8_t[NET_BUFF_SIZE];
+			int res = read(sfd, buff, NET_BUFF_SIZE);
+			if (res > 0) {
+				ptr = deserialize(buff);
+				dmg = ptr->recDmg;
+			}
+			delete buff;
+		}
+		if (misses > 0)
+			misses--;
 	}
+	if (ptr != nullptr)
+		ptr->recDmg = dmg;
 	return ptr;
 }
 

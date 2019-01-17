@@ -17,6 +17,7 @@ class Network {
 		std::shared_ptr<GameState> rec();
 		~Network();
 	private:
+		int misses = 0;
 		int sfd = -1;
 		int lfd = -1;
 

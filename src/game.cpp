@@ -135,7 +135,6 @@ void Game::absCheckLineClear() {
 			}
 			auto msz = match.size();
 			if (match.size() >= 4) {
-				printf("K: %d\n", state->tileMap[match.front()]);
 				switch(state->tileMap[match.front()]) {
 					case RED_PIECE:
 						cd->r += msz;
@@ -271,7 +270,6 @@ std::shared_ptr<GamePiece> Game::nextPiece() {
 	}
 	auto ptr = std::make_shared<GamePiece>();
 	if (state->next.size() > 0) {
-		printf("ATTACK!\n");
 		ptr->map = state->next.front();
 		state->next.pop_front();
 	} else {
@@ -332,15 +330,15 @@ void Game::applyGravity(int idx) {
 	}
 }
 
-void Game::init(std::unique_ptr<Boss> boss) {
-	this->boss = std::move(boss);
+void Game::init(std::shared_ptr<Boss> boss) {
+	this->boss = boss;
 }
 
 void Game::applyGravityByGroup() {
 	std::vector<bool> vis(MAP_HEIGHT * MAP_WIDTH);
 	std::vector<std::list<int>> groups;
 	for (int i = MAP_HEIGHT * MAP_WIDTH - 1; i >= 0; --i) {
-		if (vis[i] || state->tileMap[i] <= JUNK_PIECE)
+		if (vis[i] || state->tileMap[i] <= CLEAR_PIECE)
 			continue;
 		std::list<int> match;
 		std::list<int> poss;
@@ -384,7 +382,6 @@ void Game::applyGravityByGroup() {
 			group.sort([](int a, int b){return a > b;});
 			for (auto &g: group) {
 				int nxt = g + MAP_WIDTH;
-				//printf("MOV %d to %d\n", g, nxt);
 				state->tileMap[nxt] = state->tileMap[g];
 				state->tileMap[g] = 0;
 				g = nxt;
@@ -419,6 +416,12 @@ void Game::update(uint32_t time) {
 	}
 	if (state->active) {
 		moveActive();
+	}
+
+	playerHp -= state->playerRecDmg;
+	state->playerRecDmg = 0;
+	if (playerHp <= 0) {
+		game_flags |= LOSE_FLAG;
 	}
 	state->hp = (uint8_t)(((double)playerHp / maxPlayerHp)*255);
 }

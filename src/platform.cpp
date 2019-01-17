@@ -63,7 +63,7 @@ bool Platform::init(int width, int height) {
 	} else {
 		width *= 2;
 		width += 2;
-		p2Offset = 0;
+		p2Offset = width;
 	}
 	p1Offset = 1;
 	height = height + 4;
@@ -157,13 +157,34 @@ void Platform::drawHealthBar(uint8_t hp, bool p1) {
 	SDL_RenderFillRect(renderer, &health);
 }
 
-void Platform::update(uint32_t time, std::shared_ptr<GameState> p1state, GameObjs objects, std::shared_ptr<GameState> p2state) {
+void Platform::drawBoss(std::shared_ptr<Boss> boss) {
+	SDL_Rect bar;
+	int barx = p1Offset + MAP_WIDTH + 1;
+	bar.x = (barx) * TILE_SIZE;
+	bar.y = 0.5 * TILE_SIZE;
+	bar.h = TILE_SIZE;
+	bar.w = (p2Offset - barx - 1) * TILE_SIZE;
+
+	SDL_Rect health;
+	health.x = bar.x;
+	health.y = bar.y;
+	health.h = bar.h;
+	health.w = (boss->hp/((double)boss->maxhp)) * (p2Offset - barx - 1) * TILE_SIZE;
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderFillRect(renderer, &bar);
+	TileColor c = tileColors[RED_PIECE - 1];
+	SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
+	SDL_RenderFillRect(renderer, &health);
+}
+
+void Platform::update(uint32_t time, std::shared_ptr<GameState> p1state, GameObjs objects, std::shared_ptr<GameState> p2state, std::shared_ptr<Boss> boss) {
 	// draw and clear renderer
 	drawObjs(objects);
 	if (p1state->active)
 		drawActive(p1state->active, true);
 	drawHealthBar(p1state->hp, true);
 	drawTileMap(p1state->tileMap, true);
+	drawBoss(boss);
 	if (game_flags & TWOP_FLAG) {
 		if (p2state) {
 			oldState = std::make_shared<GameState>();
@@ -183,13 +204,6 @@ void Platform::update(uint32_t time, std::shared_ptr<GameState> p1state, GameObj
 			drawHealthBar(oldState->hp, false);
 		}
 	}
-	/*SDL_Rect target;
-	  target.x = (MAP_WIDTH + 4) * TILE_SIZE;
-	  target.y = TILE_SIZE;
-	  target.w = (MAP_WIDTH / 2) * TILE_SIZE;
-	  target.h = (1200.0/850)*((MAP_WIDTH / 2) * TILE_SIZE);
-	  SDL_RenderCopy(renderer, tex, NULL, &target);
-	 */
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderClear(renderer);
