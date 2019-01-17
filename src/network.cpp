@@ -73,7 +73,9 @@ static int closeSocket_mp(int fd) {
 	int res;
 #ifdef _WIN32
 	res = closesocket(fd);
-	WSACleanup();
+	for (int i = 0; i < wsaCount; ++i) {
+		WSACleanup();
+	}
 #elif __linux__
 	res = close(fd);
 #endif
@@ -91,6 +93,20 @@ static char* strerror_mp(int errnum) {
 #endif
 	return res;
 }
+
+static int wsaStart() {
+#ifdef _WIN32
+	WSADATA wsaData;
+	int wsares = WSAStartup(MAKEWORD(2,2), &wsaData);
+	if (wsares != 0) {
+		fprintf(stderr, "WSAStartup failed with error: %d\n", wsares);
+		return -1;
+	}
+	wsaCount += 1;
+#endif
+	return 0;
+}
+
 
 std::shared_ptr<GameState> Network::rec() {
 	std::shared_ptr<GameState> ptr = nullptr;
@@ -135,15 +151,9 @@ void Network::send_state(std::shared_ptr<GameState> state) {
 
 int Network::conn(std::string hostname, std::string port) {
 	struct addrinfo hints, *res, *rptr;
-#ifdef _WIN32
-	WSADATA wsaData;
-	int wsares = WSAStartup(MAKEWORD(2,2), &wsaData);
-	if (wsares != 0) {
-		fprintf(stderr, "WSAStartup failed with error: %d\n", wsares);
-		return -1;
-	}
-#endif
 	while (sfd < 0) {
+		if (wsaStart() == -1)
+			return -1;
 		memset(&hints, 0, sizeof(struct addrinfo));
 
 		hints.ai_family = AF_INET;
@@ -178,15 +188,8 @@ int Network::conn(std::string hostname, std::string port) {
 }
 
 int Network::host(std::string port) {
-#ifdef _WIN32
-	WSADATA wsaData;
-	int wsares = WSAStartup(MAKEWORD(2,2), &wsaData);
-	if (wsares != 0) {
-		fprintf(stderr, "WSAStartup failed with error: %d\n", wsares);
+	if (wsaStart() == -1)
 		return -1;
-	}
-#endif
-
 	lfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (lfd == -1) {
 		fprintf(stderr, "Failed to create server socket %s\n", strerror_mp(errno));

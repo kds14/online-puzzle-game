@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <string.h>
 #include <list>
 #include <stdlib.h>
 #include <stdint.h>

@@ -23,6 +23,7 @@
 #define ERRMSG_LEN 500
 
 static char ERRMSG_BUFF[ERRMSG_LEN];
+static int wsaCount = 0;
 
 #endif
 
